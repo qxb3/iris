@@ -45,4 +45,6 @@ pub fn start(addr: &str) {
                 .unwrap();
         });
     }
+
+    drop(listener);
 }
