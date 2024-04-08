@@ -1,27 +1,32 @@
-use clap::{command, Command, Parser};
+use clap::{arg, value_parser, Command};
 
-mod server;
 mod client;
-
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-
-}
+mod server;
 
 fn main() {
     let matches = cli().get_matches();
 
     match matches.subcommand() {
-        Some(("server", _sub_matches)) => {
-            server::start("127.0.0.1:3000");
-        },
-        Some(("client", _sub_matches)) => {
-            client::start("127.0.0.1:3000");
-        },
-        _ => unreachable!()
-    }
+        Some(("server", sub)) => {
+            let port = sub
+                .get_one::<u32>("port")
+                .unwrap();
 
+            server::start(format!("127.0.0.1:{port}").as_str());
+        }
+        Some(("client", sub)) => {
+            let host = sub
+                .get_one::<String>("host")
+                .unwrap();
+
+            let port = sub
+                .get_one::<u32>("port")
+                .unwrap();
+
+            client::start(format!("{host}:{port}").as_str());
+        }
+        _ => unreachable!(),
+    }
 }
 
 fn cli() -> Command {
@@ -31,9 +36,27 @@ fn cli() -> Command {
         .subcommand(
             Command::new("server")
                 .about("Start the in-memory server")
+                .arg(
+                    arg!(-p --port <number> "The port the server will run on")
+                        .value_parser(value_parser!(u32))
+                        .default_value("3000")
+                        .required(false)
+                )
         )
         .subcommand(
             Command::new("client")
                 .about("Enter client repl mode")
+                .arg(
+                    arg!(--host <string> "The url the client will connect to")
+                        .value_parser(value_parser!(String))
+                        .default_value("127.0.0.1")
+                        .required(false)
+                )
+                .arg(
+                    arg!(-p --port <number> "The port the client connect to")
+                        .value_parser(value_parser!(u32))
+                        .default_value("3000")
+                        .required(false)
+                )
         )
 }

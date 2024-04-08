@@ -4,8 +4,25 @@ use std::{
     thread,
 };
 
-pub fn start(addr: & str) {
+use indoc::indoc;
+
+pub fn start(addr: &str) {
     let listener = TcpListener::bind(addr).unwrap();
+
+    let local_addr = listener.local_addr().unwrap();
+    println!(indoc! {"
+          ▀             ▀
+        ▄▄▄     ▄ ▄▄  ▄▄▄     ▄▄▄
+          █     █▀  ▀   █    █   ▀
+          █     █       █     ▀▀▀▄
+        ▄▄█▄▄   █     ▄▄█▄▄  ▀▄▄▄▀
+
+        Server has started.
+
+        version: {},
+        host: {}
+        port: {}
+    "}, env!("CARGO_PKG_VERSION"), local_addr, local_addr.port());
 
     for incoming in listener.incoming() {
         thread::spawn(|| {
