@@ -12,18 +12,17 @@ pub fn start(addr: &str) {
     let local_addr = listener.local_addr().unwrap();
     println!(
         indoc! {"
-          ▀             ▀
-        ▄▄▄     ▄ ▄▄  ▄▄▄     ▄▄▄
-          █     █▀  ▀   █    █   ▀
-          █     █       █     ▀▀▀▄
-        ▄▄█▄▄   █     ▄▄█▄▄  ▀▄▄▄▀
+              ▀             ▀
+            ▄▄▄     ▄ ▄▄  ▄▄▄     ▄▄▄
+              █     █▀  ▀   █    █   ▀
+              █     █       █     ▀▀▀▄
+            ▄▄█▄▄   █     ▄▄█▄▄  ▀▄▄▄▀
 
-        Server has started.
-
-        version: {},
-        host: {}
-        port: {}
-    "},
+            Server has started.
+            • version:  {},
+            • host:     http://{}
+            • port:     {}
+        "},
         env!("CARGO_PKG_VERSION"),
         local_addr,
         local_addr.port()
