@@ -8,20 +8,13 @@ fn main() {
 
     match matches.subcommand() {
         Some(("server", sub)) => {
-            let port = sub
-                .get_one::<u32>("port")
-                .unwrap();
+            let port = sub.get_one::<u32>("port").unwrap();
 
             server::start(format!("127.0.0.1:{port}").as_str());
         }
         Some(("client", sub)) => {
-            let host = sub
-                .get_one::<String>("host")
-                .unwrap();
-
-            let port = sub
-                .get_one::<u32>("port")
-                .unwrap();
+            let host = sub.get_one::<String>("host").unwrap();
+            let port = sub.get_one::<u32>("port").unwrap();
 
             client::start(format!("{host}:{port}").as_str());
         }

@@ -10,7 +10,8 @@ pub fn start(addr: &str) {
     let listener = TcpListener::bind(addr).unwrap();
 
     let local_addr = listener.local_addr().unwrap();
-    println!(indoc! {"
+    println!(
+        indoc! {"
           ▀             ▀
         ▄▄▄     ▄ ▄▄  ▄▄▄     ▄▄▄
           █     █▀  ▀   █    █   ▀
@@ -22,7 +23,11 @@ pub fn start(addr: &str) {
         version: {},
         host: {}
         port: {}
-    "}, env!("CARGO_PKG_VERSION"), local_addr, local_addr.port());
+    "},
+        env!("CARGO_PKG_VERSION"),
+        local_addr,
+        local_addr.port()
+    );
 
     for incoming in listener.incoming() {
         thread::spawn(|| {
