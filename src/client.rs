@@ -1,4 +1,4 @@
-use std::{io::Write, net::TcpStream, process};
+use std::{io::{BufRead, BufReader, Write}, net::TcpStream, process};
 
 pub fn start(addr: &str) {
     match TcpStream::connect(addr) {
@@ -27,7 +27,7 @@ pub fn start(addr: &str) {
                         },
                         2 => println!("No data provided."),
                         3 => {
-                            let command = parts[0];
+                            let command = parts[0].to_uppercase();
                             let id = match parts[1].parse::<u32>() {
                                 Ok(part) => part,
                                 Err(err) => {
@@ -37,20 +37,24 @@ pub fn start(addr: &str) {
                             };
                             let data = parts[2];
 
-                            match command {
-                                "get" => println!("get"),
-                                "set" => println!("set"),
-                                "upd" => println!("update"),
-                                "del" => println!("delete"),
-                                _ => println!("Invalid command.")
+                            match stream.write_all(format!("Command: {}\nID: {}\nData: {}\r\n\r\n", command, id, data).as_bytes()) {
+                                Ok(_) => {
+                                    let buf_reader = BufReader::new(&mut stream);
+                                    let reply: Vec<String> = buf_reader
+                                        .lines()
+                                        .map(|result| result.unwrap())
+                                        .take_while(|line| !line.is_empty())
+                                        .collect();
+
+                                    println!("Reply: {:#?}", reply);
+                                },
+                                Err(err) => println!("Failed: {err}")
                             }
                         },
                         _ => println!("Too many arguments.")
                     }
                 }
             }
-
-            // stream.write_all("Command: SET\nID: 1\nData: {\"foo\": true}".as_bytes()).ok();
         }
         Err(err) => {
             println!("Failed to connect: {err}");

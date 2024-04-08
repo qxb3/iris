@@ -42,7 +42,7 @@ pub fn start(addr: &str) {
                     println!("Req: {:#?}", req);
 
                     stream
-                        .write_all("HTTP/1.1 200 OK\r\n\r\n".as_bytes())
+                        .write_all("Reply Babyyyyyyy\r\n\r\n".as_bytes())
                         .unwrap();
                 });
             }
