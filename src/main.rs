@@ -4,7 +4,7 @@ mod client;
 mod server;
 
 fn main() {
-    let matches = cli().get_matches();
+    let matches = command().get_matches();
 
     match matches.subcommand() {
         Some(("server", sub)) => {
@@ -22,7 +22,7 @@ fn main() {
     }
 }
 
-fn cli() -> Command {
+fn command() -> Command {
     Command::new("iris")
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand_required(true)
