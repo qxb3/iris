@@ -22,7 +22,7 @@ pub fn start(addr: &str) {
                             match part {
                                 "help" => println!("help menu"),
                                 "exit" => process::exit(0),
-                                _ => println!("No command given.")
+                                _ => println!("Invalid command.")
                             }
                         },
                         2 => println!("No data provided."),
