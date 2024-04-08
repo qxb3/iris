@@ -29,7 +29,7 @@ pub fn start(addr: &str) {
                                 Ok(part) => part,
                                 Err(err) => {
                                     println!("ID needs to be a number: {err}.");
-                                    process::exit(1);
+                                    continue;
                                 }
                             };
                             let data = parts[2];
