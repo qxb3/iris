@@ -1,5 +1,7 @@
 use std::{
-    io::{BufRead, BufReader, Write}, net::TcpListener, process, thread
+    io::{BufRead, BufReader, Write},
+    net::TcpListener,
+    process, thread,
 };
 
 use indoc::indoc;
@@ -46,7 +48,7 @@ pub fn start(addr: &str) {
             }
 
             drop(listener);
-        },
+        }
         Err(err) => {
             println!("Failed to start server at {addr}: {err}");
             process::exit(1);
