@@ -1,3 +1,3 @@
 # iris
 
-A simple in-memory database.
+An in-memory database
