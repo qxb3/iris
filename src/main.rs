@@ -9,8 +9,9 @@ fn main() {
     match matches.subcommand() {
         Some(("server", sub)) => {
             let port = sub.get_one::<u32>("port").unwrap();
+            let debug = sub.get_one::<bool>("debug").unwrap();
 
-            server::start(format!("127.0.0.1:{port}").as_str());
+            server::start(format!("127.0.0.1:{port}").as_str(), debug.to_owned());
         }
         Some(("client", sub)) => {
             let host = sub.get_one::<String>("host").unwrap();
@@ -29,27 +30,29 @@ fn command() -> Command {
         .subcommand(
             Command::new("server")
                 .about("Start the in-memory server")
-                .arg(
+                .args(vec![
                     arg!(-p --port <number> "The port the server will run on")
                         .value_parser(value_parser!(u32))
                         .default_value("3000")
-                        .required(false)
-                )
+                        .required(false),
+                    arg!(-d --debug "The port the server will run on")
+                        .value_parser(value_parser!(bool))
+                        .default_value("false")
+                        .required(false),
+                ])
         )
         .subcommand(
             Command::new("client")
                 .about("Enter client repl mode")
-                .arg(
+                .args(vec![
                     arg!(--host <string> "The url the client will connect to")
                         .value_parser(value_parser!(String))
                         .default_value("127.0.0.1")
-                        .required(false)
-                )
-                .arg(
+                        .required(false),
                     arg!(-p --port <number> "The port the client connect to")
                         .value_parser(value_parser!(u32))
                         .default_value("3000")
                         .required(false)
-                )
+                ])
         )
 }

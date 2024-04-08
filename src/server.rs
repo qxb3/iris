@@ -6,7 +6,7 @@ use std::{
 
 use indoc::indoc;
 
-pub fn start(addr: &str) {
+pub fn start(addr: &str, debug: bool) {
     match TcpListener::bind(addr) {
         Ok(listener) => {
             let local_addr = listener.local_addr().unwrap();
@@ -30,7 +30,7 @@ pub fn start(addr: &str) {
             );
 
             for incoming in listener.incoming() {
-                thread::spawn(|| {
+                thread::spawn(move || {
                     let mut stream = incoming.unwrap();
                     let buf_reader = BufReader::new(&mut stream);
                     let req: Vec<String> = buf_reader
@@ -39,7 +39,9 @@ pub fn start(addr: &str) {
                         .take_while(|line| !line.is_empty())
                         .collect();
 
-                    println!("Req: {:#?}", req);
+                    if debug {
+                        println!("Request: {:#?}", req);
+                    }
 
                     stream
                         .write_all("Reply Babyyyyyyy\r\n\r\n".as_bytes())
