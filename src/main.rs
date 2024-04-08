@@ -1,7 +1,9 @@
-mod client;
 mod server;
+mod client;
 
 fn main() {
-    server::start("127.0.0.1:3000");
-    client::start("127.0.0.1:3000");
+    let addr = "127.0.0.1:3000";
+
+    server::start(addr);
+    client::start(addr);
 }

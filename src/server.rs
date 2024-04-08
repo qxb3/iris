@@ -4,7 +4,7 @@ use std::{
     thread,
 };
 
-pub fn start(addr: &str) {
+pub fn start(addr: & str) {
     let listener = TcpListener::bind(addr).unwrap();
 
     for incoming in listener.incoming() {
