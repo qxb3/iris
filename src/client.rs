@@ -2,14 +2,17 @@ use std::{io::Write, net::TcpStream, process};
 
 pub fn start(addr: &str) {
     match TcpStream::connect(addr) {
-        Ok(mut _stream) => {
+        Ok(mut stream) => {
             loop {
                 if let Ok(line) = readline() {
                     if line.is_empty() {
                         continue;
                     }
 
-                    let parts: Vec<&str> = line.split(' ').collect();
+                    let parts: Vec<&str> = line.split(' ')
+                        .filter(|part| !part.is_empty())
+                        .map(|part| part.trim())
+                        .collect();
 
                     match parts.len() {
                         0 => println!("No command given."),
