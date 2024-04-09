@@ -1,5 +1,9 @@
 use std::{collections::HashMap, io, process, sync::Arc};
-use tokio::{io::AsyncWriteExt, net::{TcpListener, TcpStream}, sync::Mutex};
+use tokio::{
+    io::AsyncWriteExt,
+    net::{TcpListener, TcpStream},
+    sync::Mutex,
+};
 use indoc::indoc;
 
 macro_rules! write_error {

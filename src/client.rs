@@ -1,5 +1,8 @@
-use std::{io::{self, Write}, process};
-use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, net::TcpStream};
+use std::{io::Write, process};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::TcpStream,
+};
 use indoc::{indoc, printdoc};
 
 pub async fn start(addr: &str) {
