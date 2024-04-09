@@ -1,5 +1,10 @@
 use std::{
-    collections::HashMap, hash::Hash, io::{BufRead, BufReader, Write}, net::TcpListener, process, sync::{Arc, Mutex}, thread
+    collections::HashMap,
+    io::{BufRead, BufReader, Write},
+    net::TcpListener,
+    process,
+    sync::{Arc, Mutex},
+    thread,
 };
 
 use indoc::indoc;
