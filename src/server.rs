@@ -86,6 +86,10 @@ fn handle_connection(mut stream: TcpStream, db_clone: &Arc<Mutex<HashMap<u32, St
             write_error!(stream, format!("Failed to read stream: {err}"));
         }
 
+        if buffer.is_empty() {
+            continue;
+        }
+
         let mut parts = buffer.splitn(3, ' ').map(|part| part.trim());
 
         let command = match parts.next() {
