@@ -37,13 +37,13 @@ pub fn start(addr: &str) {
                             };
                             let data = parts[2];
 
-                            match stream.write_all(format!("Command: {}\nID: {}\nData: {}\r\n\r\n", command, id, data).as_bytes()) {
+                            match stream.write_all(format!("Command: {}\nID: {}\nData: {}\nEnd\n", command, id, data).as_bytes()) {
                                 Ok(_) => {
                                     let buf_reader = BufReader::new(&mut stream);
                                     let reply: Vec<String> = buf_reader
                                         .lines()
                                         .map(|result| result.unwrap())
-                                        .take_while(|line| !line.is_empty())
+                                        .take_while(|line| line != "End")
                                         .collect();
 
                                     println!("Reply: {:#?}", reply);
