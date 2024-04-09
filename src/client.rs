@@ -75,6 +75,7 @@ pub fn start(addr: &str) {
                             • Commands
                               - SET <id:number> <data:string>: sets a value on a key.
                               - GET <id:number>: sets a value on a key.
+                              - DEL <id:number>: deletes a value on a key.
                               - help: how this message.
                               - clear: clear prompt.
                               - exit: exit repl.
