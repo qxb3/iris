@@ -4,7 +4,7 @@ use std::{
     net::{TcpListener, TcpStream},
     process,
     sync::{Arc, Mutex},
-    thread,
+    thread
 };
 
 use indoc::indoc;
@@ -82,8 +82,16 @@ fn handle_connection(mut stream: TcpStream, db_clone: &Arc<Mutex<HashMap<u32, St
         let mut buf_reader = BufReader::new(&mut stream);
 
         let mut buffer = String::new();
-        if let Err(err) = buf_reader.read_line(&mut buffer) {
-            write_error!(stream, format!("Failed to read stream: {err}"));
+        match buf_reader.read_line(&mut buffer) {
+            Ok(byte) => {
+                if byte == 0 {
+                    debug!("Connection closed.", debug);
+                    break;
+                }
+            },
+            Err(err) => {
+                write_error!(stream, format!("Failed to read stream: {err}"));
+            }
         }
 
         if buffer.is_empty() {
