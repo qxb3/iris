@@ -76,16 +76,10 @@ pub fn start(addr: &str) {
                         None => write_error!("No ID specified. \"<command> <id> [data]\"")
                     };
 
-                    let data: Option<String> = match parts.next() {
-                        Some(data) => Some(data.to_string()),
-                        None => {
-                            if command == "SET" || command == "UPD" {
-                                write_error!("<data> is required for \"{command}\". <command> <id> <data>")
-                            } else {
-                                None
-                            }
-                        }
-                    };
+                    let data = parts.collect::<Vec<&str>>().join(" ");
+                    if data.len() <= 0 && command == "SET" || command == "UPD" {
+                        write_error!(format!("<data> is required for \"{command}\""));
+                    }
 
                     match command.as_str() {
                         "GET" | "DEL" => {
@@ -95,7 +89,7 @@ pub fn start(addr: &str) {
                             }
                         },
                         "SET" | "UPD" => {
-                            match stream.write_all(format!("{command} {id} {}\n", data.unwrap()).as_bytes()) {
+                            match stream.write_all(format!("{command} {id} {data}\n").as_bytes()) {
                                 Ok(_) => handle_reply!(stream),
                                 Err(err) => write_error!(format!("Failed: {err}"))
                             }

@@ -88,16 +88,10 @@ pub fn start(addr: &str, debug: bool) {
                                     None => write_error!(stream, "err No ID specified. \"<command> <id> [data]\"")
                                 };
 
-                                let data: Option<String> = match parts.next() {
-                                    Some(data) => Some(data.to_string()),
-                                    None => {
-                                        if command == "SET" || command == "UPD" {
-                                            write_error!(stream, format!("err <data> is required for \"{command}\". <command> <id> <data>"))
-                                        } else {
-                                            None
-                                        }
-                                    }
-                                };
+                                let data = parts.collect::<Vec<&str>>().join(" ");
+                                if data.len() <= 0 && command == "SET" || command == "UPD" {
+                                    write_error!(stream, format!("<data> is required for \"{command}\""));
+                                }
 
                                 debug!(format!(
                                     indoc! {"
@@ -121,7 +115,7 @@ pub fn start(addr: &str, debug: bool) {
                                         stream.write_all(format!("ok {result}\n").as_bytes()).unwrap();
                                     },
                                     "SET" => {
-                                        db.insert(id, data.unwrap());
+                                        db.insert(id, data);
                                         stream.write_all("ok\n".as_bytes()).unwrap();
                                     }
                                     _ => {}
