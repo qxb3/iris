@@ -1,4 +1,5 @@
 use std::{io::{BufRead, BufReader, Write}, net::TcpStream, process};
+use indoc::indoc;
 
 macro_rules! write_error {
     ($message:expr) => {
@@ -32,6 +33,26 @@ macro_rules! handle_reply {
 pub fn start(addr: &str) {
     match TcpStream::connect(addr) {
         Ok(mut stream) => {
+            let local_addr = &stream.peer_addr().unwrap();
+            println!(
+                indoc! {"
+
+                      ▀             ▀
+                    ▄▄▄     ▄ ▄▄  ▄▄▄     ▄▄▄
+                      █     █▀  ▀   █    █   ▀
+                      █     █       █     ▀▀▀▄
+                    ▄▄█▄▄   █     ▄▄█▄▄  ▀▄▄▄▀
+
+                    Client is connected.
+                    • version:  {}
+                    • host:     http://{}
+                    • port:     {}
+                "},
+                env!("CARGO_PKG_VERSION"),
+                local_addr,
+                local_addr.port()
+            );
+
             loop {
                 if let Ok(line) = readline() {
                     if line.is_empty() {

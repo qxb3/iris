@@ -33,6 +33,7 @@ pub fn start(addr: &str, debug: bool) {
 
             println!(
                 indoc! {"
+
                       ▀             ▀
                     ▄▄▄     ▄ ▄▄  ▄▄▄     ▄▄▄
                       █     █▀  ▀   █    █   ▀
