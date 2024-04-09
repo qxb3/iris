@@ -138,7 +138,7 @@ fn handle_connection(mut stream: TcpStream, db_clone: &Arc<Mutex<HashMap<u32, St
                     None => write_error!(stream, format!("Cannot find item with an id of \"{id}\""))
                 };
 
-                write_ok!(stream, result);
+                write_ok!(stream, format!("\"{}\"", result));
             },
             "SET" => {
                 db.insert(id, data);
