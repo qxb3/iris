@@ -71,22 +71,22 @@ pub fn start(addr: &str, debug: bool) {
 
                                 let command = match parts.next() {
                                     Some(command) => command.to_uppercase(),
-                                    None => write_error!(stream, "No command specified")
+                                    None => write_error!(stream, "err No command specified")
                                 };
 
                                 let id = match parts.next() {
                                     Some(id) => match id.parse::<u32>() {
                                         Ok(id) => id,
-                                        Err(_) => write_error!(stream, "ID needs to be a number")
+                                        Err(_) => write_error!(stream, "err ID needs to be a number")
                                     },
-                                    None => write_error!(stream, "No ID specified. \"<command> <id> [data]\"")
+                                    None => write_error!(stream, "err No ID specified. \"<command> <id> [data]\"")
                                 };
 
                                 let data: Option<String> = match parts.next() {
                                     Some(data) => Some(data.to_string()),
                                     None => {
                                         if command == "SET" || command == "UPD" {
-                                            write_error!(stream, format!("<data> is required for \"{command}\". <command> <id> <data>"))
+                                            write_error!(stream, format!("err <data> is required for \"{command}\". <command> <id> <data>"))
                                         } else {
                                             None
                                         }
@@ -109,13 +109,14 @@ pub fn start(addr: &str, debug: bool) {
                                     "GET" => {
                                         let result = match db.get(&id) {
                                             Some(item) => item,
-                                            None => write_error!(stream, format!("Cannot find item with an id of \"{id}\""))
+                                            None => write_error!(stream, format!("err Cannot find item with an id of \"{id}\""))
                                         };
 
-                                        stream.write_all(format!("{result}\n").as_bytes()).unwrap();
+                                        stream.write_all(format!("ok {result}\n").as_bytes()).unwrap();
                                     },
                                     "SET" => {
                                         db.insert(id, data.unwrap());
+                                        stream.write_all("ok\n".as_bytes()).unwrap();
                                     }
                                     _ => {}
                                 }
