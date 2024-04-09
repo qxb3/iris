@@ -3,7 +3,8 @@ use clap::{arg, value_parser, Command};
 mod client;
 mod server;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let matches = command().get_matches();
 
     match matches.subcommand() {
@@ -11,13 +12,13 @@ fn main() {
             let port = sub.get_one::<u32>("port").unwrap();
             let debug = sub.get_one::<bool>("debug").unwrap();
 
-            server::start(format!("127.0.0.1:{port}").as_str(), debug.to_owned());
+            server::start(format!("127.0.0.1:{port}").as_str(), debug.to_owned()).await;
         }
         Some(("client", sub)) => {
             let host = sub.get_one::<String>("host").unwrap();
             let port = sub.get_one::<u32>("port").unwrap();
 
-            client::start(format!("{host}:{port}").as_str());
+            client::start(format!("{host}:{port}").as_str()).await;
         }
         _ => unreachable!(),
     }
