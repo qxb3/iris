@@ -24,7 +24,8 @@ macro_rules! handle_reply {
             match buf_reader.read_line(&mut buffer) {
                 Ok(byte) => {
                     if byte == 0 {
-                        write_error!("Connection closed");
+                        println!("Connection closed.");
+                        process::exit(1);
                     }
 
                     println!("> {buffer}");
