@@ -4,7 +4,7 @@ use std::{
     process,
 };
 
-use indoc::indoc;
+use indoc::{indoc, printdoc};
 
 macro_rules! write_error {
     ($message:expr) => {
@@ -64,9 +64,29 @@ pub fn start(addr: &str) {
                         continue;
                     }
 
-                    match stream.write_all(format!("{}\n", line).as_bytes()) {
-                        Ok(_) => handle_reply!(stream),
-                        Err(err) => write_error!(format!("Failed: {err}"))
+                    let command = line.clone().splitn(3, ' ').collect::<Vec<&str>>().get(0).unwrap().to_lowercase();
+                    match command.as_str() {
+                        "help" => printdoc! {"
+                            • What is iris?
+                              iris is a simple key value database,
+                              every value in iris is considered to be a string (for now)
+                              and you, yourself will be the one to parse the types.
+
+                            • Commands
+                              - SET <id:number> <data:string>: sets a value on a key.
+                              - GET <id:number>: sets a value on a key.
+                              - help: how this message.
+                              - clear: clear prompt.
+                              - exit: exit repl.
+                        "},
+                        "clear" => print!("\x1B[2J\x1B[1;1H"),
+                        "exit" => process::exit(0),
+                        _ => {
+                            match stream.write_all(format!("{}\n", line).as_bytes()) {
+                                Ok(_) => handle_reply!(stream),
+                                Err(err) => write_error!(format!("Failed: {err}"))
+                            }
+                        }
                     }
                 }
             }
