@@ -1,4 +1,9 @@
-use std::{io::{BufRead, BufReader, Write}, net::TcpStream, process};
+use std::{
+    io::{BufRead, BufReader, Write},
+    net::TcpStream,
+    process,
+};
+
 use indoc::indoc;
 
 macro_rules! write_error {
