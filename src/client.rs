@@ -1,5 +1,34 @@
 use std::{io::{BufRead, BufReader, Write}, net::TcpStream, process};
 
+macro_rules! write_error {
+    ($message:expr) => {
+        {
+            println!("{}\n", $message);
+            continue;
+        }
+    };
+}
+
+macro_rules! handle_reply {
+    ($stream:expr) => {
+        {
+            let mut buf_reader = BufReader::new(&mut $stream);
+
+            let mut buffer = String::new();
+            match buf_reader.read_line(&mut buffer) {
+                Ok(byte) => {
+                    if byte == 0 {
+                        write_error!("Connection closed");
+                    }
+
+                    println!("{buffer}");
+                },
+                Err(err) => write_error!(format!("Failed: {err}"))
+            }
+        }
+    };
+}
+
 pub fn start(addr: &str) {
     match TcpStream::connect(addr) {
         Ok(mut stream) => {
@@ -9,49 +38,48 @@ pub fn start(addr: &str) {
                         continue;
                     }
 
-                    let parts: Vec<&str> = line.split(' ')
+                    let mut parts = line.split(' ')
                         .filter(|part| !part.is_empty())
-                        .map(|part| part.trim())
-                        .collect();
+                        .map(|part| part.trim());
 
-                    match parts.len() {
-                        0 => println!("No command given."),
-                        1 => {
-                            let part = parts[0];
+                    let command = match parts.next() {
+                        Some(command) => command.to_uppercase(),
+                        None => write_error!("No command specified")
+                    };
 
-                            match part {
-                                "help" => println!("help menu"),
-                                "exit" => process::exit(0),
-                                _ => println!("Invalid command.")
+                    let id = match parts.next() {
+                        Some(id) => match id.parse::<u32>() {
+                            Ok(id) => id,
+                            Err(_) => write_error!("ID needs to be a number")
+                        },
+                        None => write_error!("No ID specified. \"<command> <id> [data]\"")
+                    };
+
+                    let data: Option<String> = match parts.next() {
+                        Some(data) => Some(data.to_string()),
+                        None => {
+                            if command == "SET" || command == "UPD" {
+                                write_error!("<data> is required for \"{command}\". <command> <id> <data>")
+                            } else {
+                                None
+                            }
+                        }
+                    };
+
+                    match command.as_str() {
+                        "GET" | "DEL" => {
+                            match &stream.write_all(format!("{command} {id}\n").as_bytes()) {
+                                Ok(_) => handle_reply!(stream),
+                                Err(err) => write_error!(format!("Failed: {err}"))
                             }
                         },
-                        2 => println!("No data provided."),
-                        3 => {
-                            let command = parts[0].to_uppercase();
-                            let id = match parts[1].parse::<u32>() {
-                                Ok(part) => part,
-                                Err(err) => {
-                                    println!("ID needs to be a number: {err}.");
-                                    continue;
-                                }
-                            };
-                            let data = parts[2];
-
-                            match stream.write_all(format!("Command: {}\nID: {}\nData: {}\nEnd\n", command, id, data).as_bytes()) {
-                                Ok(_) => {
-                                    let buf_reader = BufReader::new(&mut stream);
-                                    let reply: Vec<String> = buf_reader
-                                        .lines()
-                                        .map(|result| result.unwrap())
-                                        .take_while(|line| line != "End")
-                                        .collect();
-
-                                    println!("Reply: {:#?}", reply);
-                                },
-                                Err(err) => println!("Failed: {err}")
+                        "SET" | "UPD" => {
+                            match stream.write_all(format!("{command} {id} {}\n", data.unwrap()).as_bytes()) {
+                                Ok(_) => handle_reply!(stream),
+                                Err(err) => write_error!(format!("Failed: {err}"))
                             }
                         },
-                        _ => println!("Too many arguments.")
+                        _ => println!("err Invalid command")
                     }
                 }
             }
