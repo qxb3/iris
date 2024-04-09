@@ -70,8 +70,6 @@ pub fn start(addr: &str, debug: bool) {
                         })
                         .collect();
 
-                    println!("{:?}", request);
-
                     if debug {
                         println!("Request: {:#?}", request);
                     }
