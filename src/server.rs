@@ -143,6 +143,10 @@ fn handle_connection(mut stream: TcpStream, db_clone: &Arc<Mutex<HashMap<u32, St
             "SET" => {
                 db.insert(id, data);
                 write_ok!(stream, "");
+            },
+            "DEL" => {
+                db.remove(&id);
+                write_ok!(stream, "");
             }
             _ => write_error!(stream, "Invalid command.")
         }
