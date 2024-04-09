@@ -136,7 +136,7 @@ async fn handle_connection(stream: &mut TcpStream, db_clone: Arc<Mutex<HashMap<u
                     None => write_error!(stream, format!("Cannot find item with an id of \"{id}\""))
                 };
 
-                stream.write_all(format!("ok \"{}\"\n", result).as_bytes()).await.unwrap();
+                write_ok!(stream, format!("ok \"{}\"\n", result));
             },
             "SET" => {
                 let mut db = db_clone.lock().await;
