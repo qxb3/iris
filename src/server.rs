@@ -35,6 +35,8 @@ macro_rules! debug {
 }
 
 pub fn start(addr: &str, debug: bool) {
+    let db: Arc<Mutex<HashMap<u32, String>>> = Arc::new(Mutex::new(HashMap::new()));
+
     match TcpListener::bind(addr) {
         Ok(listener) => {
             let local_addr = listener.local_addr().unwrap();
@@ -58,7 +60,6 @@ pub fn start(addr: &str, debug: bool) {
                 local_addr.port()
             );
 
-            let db: Arc<Mutex<HashMap<u32, String>>> = Arc::new(Mutex::new(HashMap::new()));
 
             for incoming in listener.incoming() {
                 let db_clone = Arc::clone(&db);
