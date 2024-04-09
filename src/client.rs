@@ -22,9 +22,9 @@ macro_rules! handle_reply {
                         write_error!("Connection closed");
                     }
 
-                    println!("{buffer}");
+                    println!("> {buffer}");
                 },
-                Err(err) => write_error!(format!("Failed: {err}"))
+                Err(err) => write_error!(format!("> Failed: {err}"))
             }
         }
     };
@@ -59,42 +59,9 @@ pub fn start(addr: &str) {
                         continue;
                     }
 
-                    let mut parts = line.split(' ')
-                        .filter(|part| !part.is_empty())
-                        .map(|part| part.trim());
-
-                    let command = match parts.next() {
-                        Some(command) => command.to_uppercase(),
-                        None => write_error!("No command specified")
-                    };
-
-                    let id = match parts.next() {
-                        Some(id) => match id.parse::<u32>() {
-                            Ok(id) => id,
-                            Err(_) => write_error!("ID needs to be a number")
-                        },
-                        None => write_error!("No ID specified. \"<command> <id> [data]\"")
-                    };
-
-                    let data = parts.collect::<Vec<&str>>().join(" ");
-                    if data.len() <= 0 && command == "SET" || command == "UPD" {
-                        write_error!(format!("<data> is required for \"{command}\""));
-                    }
-
-                    match command.as_str() {
-                        "GET" | "DEL" => {
-                            match &stream.write_all(format!("{command} {id}\n").as_bytes()) {
-                                Ok(_) => handle_reply!(stream),
-                                Err(err) => write_error!(format!("Failed: {err}"))
-                            }
-                        },
-                        "SET" | "UPD" => {
-                            match stream.write_all(format!("{command} {id} {data}\n").as_bytes()) {
-                                Ok(_) => handle_reply!(stream),
-                                Err(err) => write_error!(format!("Failed: {err}"))
-                            }
-                        },
-                        _ => println!("err Invalid command")
+                    match stream.write_all(format!("{}\n", line).as_bytes()) {
+                        Ok(_) => handle_reply!(stream),
+                        Err(err) => write_error!(format!("Failed: {err}"))
                     }
                 }
             }
