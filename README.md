@@ -71,7 +71,7 @@ iris@0.1.0 $ █
 - [x] A working client repl
 - [x] Better client and server code (idk, i think its much better than before)
 - [x] `list` command
-- [ ] Make a better and sensible command parsing
+- [x] Make a better and sensible command parsing
 - [ ] Types maybe?
 - [ ] Make the thing an installable cli
 - [ ] Rust client crate
