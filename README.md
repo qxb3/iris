@@ -72,7 +72,9 @@ iris@0.1.0 $ █
 - [x] Better client and server code (idk, i think its much better than before)
 - [x] `list` command
 - [x] Make a better and sensible command parsing
-- [ ] Types maybe?
+- [ ] Implement APP command
+- [ ] Implement piping operator
 - [ ] Make the thing an installable cli
 - [ ] Rust client crate
 - [ ] Javascript client
+- [ ] Types maybe?
