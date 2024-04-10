@@ -1,6 +1,6 @@
 <h1 align="center">iris</h1>
 
-<p align="center">An in-memory database in rust</p>
+<p align="center">A command like in-memory database in rust</p>
 
 ```bash
 Usage: iris <COMMAND>
