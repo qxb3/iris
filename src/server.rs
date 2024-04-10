@@ -149,11 +149,15 @@ async fn handle_connection(
 
                         write_ok!(stream, format!("{:?}", result));
                     }
-                    Expr::Range(start, end) => {
+                    Expr::Range(start, mut end) => {
+                        if end < 0 {
+                            end = db.len() as i32;
+                        }
+
                         let result: Vec<(&u32, &String)> = db
                             .iter()
                             .skip(start as usize)
-                            .take(end as usize)
+                            .take((end + 1) as usize)
                             .collect();
 
                         write_ok!(stream, format!("{:?}", result));

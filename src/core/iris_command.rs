@@ -67,7 +67,7 @@ fn parse_expr<'a>(expr_str: &'a str) -> Result<Expr, &'a str> {
     if parts.len() == 2 {
         if let Ok(start) = parts[0].parse::<i32>() {
             if let Ok(end) = parts[1].parse::<i32>() {
-                return Ok(Expr::Range(start, end + 1));
+                return Ok(Expr::Range(start, end));
             }
         }
     }
