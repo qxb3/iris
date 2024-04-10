@@ -151,7 +151,7 @@ async fn handle_connection(
                     }
                     Expr::Range(start, mut end) => {
                         if end < 0 {
-                            end = db.len() as i32;
+                            end = (db.len() - 1) as i32;
                         }
 
                         let result: Vec<(&u32, &String)> = db
@@ -204,13 +204,23 @@ async fn handle_connection(
             Command::Append { id, data } => {}
             Command::Delete { expr } => {
                 let mut db = db_clone.lock().await;
+
                 match expr {
                     Expr::Number(id) => {
                         db.remove(&(id as u32));
-
                         write_ok!(stream, format!("{}", id));
                     }
-                    Expr::Range(_start, _end) => {}
+                    Expr::Range(start, mut end) => {
+                        if end < 0 {
+                            end = db.len() as i32;
+                        }
+
+                        let result = String::new();
+                        for id in start..end + 1 {
+                            db.remove(&(id as u32));
+                            write_ok!(stream, format!("{}", id));
+                        }
+                    }
                 }
             }
             Command::Invalid { reason } => write_error!(stream, reason),
