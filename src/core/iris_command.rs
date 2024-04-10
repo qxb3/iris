@@ -21,7 +21,7 @@ pub fn parse_command(input: &str) -> Command {
     match parts.as_slice() {
         // Error Handling
         ["GET", "SET", "APP"] => Command::Invalid { reason: "Missing ID" },
-        ["SET" | "APP", _id] => Command::Invalid { reason: "Missing Item" },
+        ["SET" | "APP", _id] => Command::Invalid { reason: "Missing Data" },
         ["LST" | "CNT" | "DEL"] => Command::Invalid { reason: "Missing Expression" },
 
         ["GET", id] => match id.parse::<u32>() {
