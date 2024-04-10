@@ -140,10 +140,11 @@ async fn handle_connection(
                     Expr::Number(count) => {
                         let result: String = db
                             .iter()
-                            .skip(count)
+                            .take(count)
                             .map(|(key, value)| format!("{key} => {value}\n"))
                             .collect();
 
+                        println!("{result}");
                         write_ok!(stream, result);
                     }
                     Expr::Range(_start, _end) => {}
