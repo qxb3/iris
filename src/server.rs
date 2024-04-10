@@ -200,8 +200,10 @@ async fn handle_connection(
 
                 match expr {
                     Expr::Number(id) => {
-                        db.remove(&(id as u32));
-                        write_ok!(stream, format!("{}", id));
+                        match db.remove(&(id as u32)) {
+                            Some(data) => write_ok!(stream, data),
+                            None => write_error!(stream, format!("Cannot delete item with an id of {id}"))
+                        }
                     }
                     Expr::Range(start, mut end) => {
                         if end < 0 {
@@ -210,8 +212,9 @@ async fn handle_connection(
 
                         let mut result = String::new();
                         for id in start..end + 1 {
-                            db.remove(&(id as u32));
-                            result += format!("{id} ").as_str();
+                            if let Some(data) = db.remove(&(id as u32)) {
+                                result.push_str(format!("{data} ").as_str());
+                            }
                         }
 
                         write_ok!(
