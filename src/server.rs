@@ -164,7 +164,37 @@ async fn handle_connection(
                     }
                 }
             }
-            Command::Count { expr } => {}
+            Command::Count { expr } => {
+                let db = db_clone.lock().await;
+
+                match expr {
+                    Expr::Number(mut count) => {
+                        if count == -1 {
+                            count = db.len() as i32;
+                        }
+
+                        let result: Vec<(&u32, &String)> = db
+                            .iter()
+                            .take(count as usize)
+                            .collect();
+
+                        write_ok!(stream, format!("{}", result.len()));
+                    },
+                    Expr::Range(start, mut end) => {
+                        if end < 0 {
+                            end = db.len() as i32;
+                        }
+
+                        let result: Vec<(&u32, &String)> = db
+                            .iter()
+                            .skip(start as usize)
+                            .take((end + 1) as usize)
+                            .collect();
+
+                        write_ok!(stream, format!("{}", result.len()));
+                    }
+                }
+            }
             Command::Set { id, data } => {
                 let mut db = db_clone.lock().await;
                 db.insert(id, data);
