@@ -2,6 +2,7 @@ use clap::{arg, value_parser, Command};
 
 mod client;
 mod server;
+mod core;
 
 #[tokio::main]
 async fn main() {

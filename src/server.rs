@@ -6,6 +6,8 @@ use tokio::{
 };
 use indoc::indoc;
 
+use crate::core::iris_command::{parse_command, Command, Expr};
+
 macro_rules! write_error {
     ($stream:expr, $message:expr) => {
         {
@@ -18,7 +20,7 @@ macro_rules! write_error {
 macro_rules! write_ok {
     ($stream:expr, $message:expr) => {
         {
-            $stream.write_all(format!("ok {}\n", $message).as_bytes()).await.unwrap();
+            $stream.write_all(format!("{}\n", $message).as_bytes()).await.unwrap();
         }
     };
 }
@@ -88,7 +90,7 @@ async fn handle_connection(stream: &mut TcpStream, db_clone: Arc<Mutex<HashMap<u
                 debug!("Connection closed.", debug);
                 break;
             },
-            Ok(bytes) => std::str::from_utf8(&buffer[..bytes]).unwrap(),
+            Ok(bytes) => std::str::from_utf8(&buffer[..bytes]).unwrap().trim(),
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => continue,
             Err(err) => {
                 println!("Failed to read: {err}.");
@@ -96,44 +98,22 @@ async fn handle_connection(stream: &mut TcpStream, db_clone: Arc<Mutex<HashMap<u
             }
         };
 
-        if line.trim().is_empty() {
+        if line.is_empty() {
             continue;
         }
 
-        let mut parts = line.splitn(3, ' ').map(|part| part.trim());
-
-        let command = match parts.next() {
-            Some(command) => command.to_uppercase(),
-            None => write_error!(stream, "No command specified.")
-        };
-
-        let id = match parts.next() {
-            Some(id) => match id.parse::<u32>() {
-                Ok(id) => id,
-                Err(_) => write_error!(stream, "ID needs to be a number.")
-            },
-            None => write_error!(stream, "No ID specified.")
-        };
-
-        let data = parts.collect::<Vec<&str>>().join(" ");
-        if data.len() <= 0 && command == "SET" || command == "UPD" {
-            write_error!(stream, format!("<data> is required for \"{command}\""));
-        }
+        let command = parse_command(line);
 
         debug!(format!(
             indoc! {"
                 Request:
-                - Command: {}
-                - ID:      {}
-                - Data:    {:?}
+                - Command: {:?}
             "},
-            command,
-            id,
-            data
+            &command,
         ), debug);
 
-        match command.as_str() {
-            "GET" => {
+        match command {
+            Command::Get { id } => {
                 let db = db_clone.lock().await;
                 let result = match db.get(&id) {
                     Some(item) => item,
@@ -142,28 +122,42 @@ async fn handle_connection(stream: &mut TcpStream, db_clone: Arc<Mutex<HashMap<u
 
                 write_ok!(stream, format!("{:?}\n", result));
             },
-            "LST" => {
+            Command::List { expr } => {
                 let db = db_clone.lock().await;
-                let result: String = db
-                    .iter()
-                    .map(|(key, value)| format!("{key} => {value}\n"))
-                    .collect();
 
-                stream.write_all(format!("{}\n", result).as_bytes()).await.unwrap();
+                match expr {
+                    Expr::Number(count) => {
+                        let result: String = db
+                            .iter()
+                            .skip(count)
+                            .map(|(key, value)| format!("{key} => {value}\n"))
+                            .collect();
+
+                        write_ok!(stream, result);
+                    },
+                    Expr::Range(_start, _end) => {}
+                }
             },
-            "SET" => {
+            Command::Count { expr } => {},
+            Command::Set { id, data } => {
                 let mut db = db_clone.lock().await;
                 db.insert(id, data);
 
-                write_ok!(stream, "");
+                write_ok!(stream, format!("{}", id));
             },
-            "DEL" => {
+            Command::Append { id, data } => {}
+            Command::Delete { expr } => {
                 let mut db = db_clone.lock().await;
-                db.remove(&id);
+                match expr {
+                    Expr::Number(id) => {
+                        db.remove(&(id as u32));
 
-                write_ok!(stream, "");
+                        write_ok!(stream, format!("{}", id));
+                    },
+                    Expr::Range(_start, _end) => {}
+                }
             }
-            _ => write_error!(stream, "Invalid command.")
+            Command::Invalid { reason } => write_error!(stream, reason)
         }
     }
 }
