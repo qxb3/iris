@@ -48,28 +48,63 @@ pub async fn start(addr: &str) {
             continue;
         }
 
-        match stream.write_all(format!("{line}\n").as_bytes()).await {
-             Ok(_) => {
-                let mut buf_reader = BufReader::new(&mut stream);
-                let mut buffer = [0; 4096];
+        let command = line
+            .clone()
+            .splitn(3, ' ')
+            .collect::<Vec<&str>>()
+            .get(0)
+            .unwrap()
+            .to_lowercase();
 
-                let server_resp = match buf_reader.read(&mut buffer).await {
-                    Ok(0) => {
-                        println!("Connection closed.");
-                        process::exit(1);
-                    }
-                    Ok(byte) => String::from_utf8_lossy(&buffer[..byte]),
+        match command.as_str() {
+            "help" => printdoc! {"
+                • What is iris?
+                  iris is a simple key value database,
+                  every value in iris is considered to be a string (for now)
+                  and you, yourself will be the one to parse the types.
+
+                • Commands
+                  <id>   = number.
+                  <expr> = number or a range (0..5).
+                  <data> = string.
+
+                 - GET <id>           : gets a value on a key.
+                 - LST <expr>         : list keys and its value based on expression.
+                 - CNT <expr>         : count all values.
+                 - SET <expr> <data>  : sets a value on a key.
+                 - APP <id> <data>    : appends a data on id.
+                 - DEL <expr>         : deletes a value on a key.
+                 - help               : show this message.
+                 - clear              : clear prompt.
+                 - exit               : exit repl.
+            "},
+            "clear" => print!("\x1B[2J\x1B[1;1H"),
+            "exit" => process::exit(0),
+            _ => {
+                match stream.write_all(format!("{line}\n").as_bytes()).await {
+                    Ok(_) => {
+                        let mut buf_reader = BufReader::new(&mut stream);
+                        let mut buffer = [0; 4096];
+
+                        let server_resp = match buf_reader.read(&mut buffer).await {
+                            Ok(0) => {
+                                println!("Connection closed.");
+                                process::exit(1);
+                            }
+                            Ok(byte) => String::from_utf8_lossy(&buffer[..byte]),
+                            Err(err) => {
+                                println!("Failed to read: {err}.");
+                                process::exit(1);
+                            }
+                        };
+
+                        println!("> {server_resp}");
+                    },
                     Err(err) => {
-                        println!("Failed to read: {err}.");
+                        println!("Failed to send: {err}");
                         process::exit(1);
                     }
-                };
-
-                println!("> {server_resp}");
-            },
-            Err(err) => {
-                println!("Failed to send: {err}");
-                process::exit(1);
+                }
             }
         }
     }
