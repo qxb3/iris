@@ -51,6 +51,7 @@ pub async fn start(addr: &str) {
             .get(0)
             .unwrap()
             .to_lowercase();
+
         match command.as_str() {
             "help" => printdoc! {"
                 • What is iris?
@@ -59,38 +60,44 @@ pub async fn start(addr: &str) {
                   and you, yourself will be the one to parse the types.
 
                 • Commands
-                 - GET <id:number>: gets a value on a key.
-                 - LST <count:number>: list keys and its value based on count.
-                 - SET <id:number> <data:string>: sets a value on a key.
-                 - DEL <id:number>: deletes a value on a key.
-                 - help: how this message.
-                 - clear: clear prompt.
-                 - exit: exit repl.
+                  <id>   = number.
+                  <expr> = number or a range (0..5).
+                  <data> = string.
+
+                 - GET <id>           : gets a value on a key.
+                 - LST <expr>         : list keys and its value based on expression.
+                 - CNT <expr>         : count all values.
+                 - SET <expr> <data>  : sets a value on a key.
+                 - APP <id> <data>    : appends a data on id.
+                 - DEL <expr>         : deletes a value on a key.
+                 - help               : show this message.
+                 - clear              : clear prompt.
+                 - exit               : exit repl.
             "},
             "clear" => print!("\x1B[2J\x1B[1;1H"),
             "exit" => process::exit(0),
-            _ => {}
-        }
+            _ => {
+                if let Err(err) = stream.write_all(format!("{line}\n").as_bytes()).await {
+                    println!("Failed to send: {err}");
+                    continue;
+                }
 
-        if let Err(err) = stream.write_all(format!("{line}\n").as_bytes()).await {
-            println!("Failed to send: {err}");
-            continue;
-        }
+                let mut buffer = String::new();
+                let server_resp = match BufReader::new(&mut stream).read_line(&mut buffer).await {
+                    Ok(0) => {
+                        println!("Connection closed.");
+                        process::exit(1);
+                    }
+                    Ok(_) => buffer,
+                    Err(err) => {
+                        println!("> Failed to read stream: {err}");
+                        continue;
+                    }
+                };
 
-        let mut buffer = String::new();
-        let server_resp = match BufReader::new(&mut stream).read_line(&mut buffer).await {
-            Ok(0) => {
-                println!("Connection closed.");
-                process::exit(1);
+                println!("> {server_resp}");
             }
-            Ok(_) => buffer,
-            Err(err) => {
-                println!("> Failed to read stream: {err}");
-                continue;
-            }
-        };
-
-        println!("> {server_resp}");
+        }
     }
 }
 
