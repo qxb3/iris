@@ -1,5 +1,5 @@
 use indoc::indoc;
-use std::{collections::HashMap, fmt::write, io, process, sync::Arc};
+use std::{collections::HashMap, io, process, sync::Arc};
 use tokio::{
     io::AsyncWriteExt,
     net::{TcpListener, TcpStream},
@@ -201,7 +201,6 @@ async fn handle_connection(
 
                 write_ok!(stream, format!("{}", id));
             }
-            Command::Append { id, data } => {}
             Command::Delete { expr } => {
                 let mut db = db_clone.lock().await;
 

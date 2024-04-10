@@ -10,7 +10,6 @@ pub enum Command<'a> {
     List { expr: Expr },
     Count { expr: Expr },
     Set { id: u32, data: String },
-    Append { id: u32, data: String },
     Delete { expr: Expr },
     Invalid { reason: &'a str },
 }
@@ -41,11 +40,6 @@ pub fn parse_command(input: &str) -> Command {
 
         ["SET", id, data @ ..] => match id.parse::<u32>() {
             Ok(id) => Command::Set { id, data: data.join(" ") },
-            Err(_) => Command::Invalid { reason: "Invalid ID" },
-        },
-
-        ["APP", id, data @ ..] => match id.parse::<u32>() {
-            Ok(id) => Command::Append { id, data: data.join(" ") },
             Err(_) => Command::Invalid { reason: "Invalid ID" },
         },
 
