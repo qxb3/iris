@@ -137,15 +137,17 @@ async fn handle_connection(
                 let db = db_clone.lock().await;
 
                 match expr {
-                    Expr::Number(count) => {
-                        let result: String = db
+                    Expr::Number(mut count) => {
+                        if count == -1 {
+                            count = db.len() as i32;
+                        }
+
+                        let result: Vec<(&u32, &String)> = db
                             .iter()
-                            .take(count)
-                            .map(|(key, value)| format!("{key} => {value}\n"))
+                            .take(count as usize)
                             .collect();
 
-                        println!("{result}");
-                        write_ok!(stream, result);
+                        write_ok!(stream, format!("{:?}", result));
                     }
                     Expr::Range(_start, _end) => {}
                 }

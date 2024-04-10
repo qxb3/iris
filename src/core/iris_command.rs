@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Expr {
-    Number(usize),
-    Range(usize, usize)
+    Number(i32),
+    Range(i32, i32)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,14 +59,14 @@ pub fn parse_command(input: &str) -> Command {
 }
 
 fn parse_expr<'a>(expr_str: &'a str) -> Result<Expr, &'a str> {
-    if let Ok(number) = expr_str.parse::<usize>() {
+    if let Ok(number) = expr_str.parse::<i32>() {
         return Ok(Expr::Number(number));
     }
 
     let parts: Vec<&str> = expr_str.split("..").collect();
     if parts.len() == 2 {
-        if let Ok(start) = parts[0].parse::<usize>() {
-            if let Ok(end) = parts[1].parse::<usize>() {
+        if let Ok(start) = parts[0].parse::<i32>() {
+            if let Ok(end) = parts[1].parse::<i32>() {
                 return Ok(Expr::Range(start, end));
             }
         }
