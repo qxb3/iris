@@ -80,32 +80,30 @@ pub async fn start(addr: &str) {
             "},
             "clear" => print!("\x1B[2J\x1B[1;1H"),
             "exit" => process::exit(0),
-            _ => {
-                match stream.write_all(format!("{line}\n").as_bytes()).await {
-                    Ok(_) => {
-                        let mut buf_reader = BufReader::new(&mut stream);
-                        let mut buffer = [0; 4096];
+            _ => match stream.write_all(format!("{line}\n").as_bytes()).await {
+                Ok(_) => {
+                    let mut buf_reader = BufReader::new(&mut stream);
+                    let mut buffer = [0; 4096];
 
-                        let server_resp = match buf_reader.read(&mut buffer).await {
-                            Ok(0) => {
-                                println!("Connection closed.");
-                                process::exit(1);
-                            }
-                            Ok(byte) => String::from_utf8_lossy(&buffer[..byte]),
-                            Err(err) => {
-                                println!("Failed to read: {err}.");
-                                process::exit(1);
-                            }
-                        };
+                    let server_resp = match buf_reader.read(&mut buffer).await {
+                        Ok(0) => {
+                            println!("Connection closed.");
+                            process::exit(1);
+                        }
+                        Ok(byte) => String::from_utf8_lossy(&buffer[..byte]),
+                        Err(err) => {
+                            println!("Failed to read: {err}.");
+                            process::exit(1);
+                        }
+                    };
 
-                        println!("> {server_resp}");
-                    },
-                    Err(err) => {
-                        println!("Failed to send: {err}");
-                        process::exit(1);
-                    }
+                    println!("> {server_resp}");
                 }
-            }
+                Err(err) => {
+                    println!("Failed to send: {err}");
+                    process::exit(1);
+                }
+            },
         }
     }
 }
@@ -114,17 +112,21 @@ async fn prompt() -> Result<String, String> {
     let mut stdin = BufReader::new(tokio::io::stdin());
     let mut stdout = tokio::io::stdout();
 
-    stdout.write(format!("iris@{} $ ", env!("CARGO_PKG_VERSION")).as_bytes()).await
+    stdout
+        .write(format!("iris@{} $ ", env!("CARGO_PKG_VERSION")).as_bytes())
+        .await
         .map_err(|e| format!("Failed to write: {e}"))?;
 
-    stdout.flush().await
+    stdout
+        .flush()
+        .await
         .map_err(|e| format!("Failed to flush: {e}"))?;
 
     let mut buffer = String::new();
     let line = match stdin.read_line(&mut buffer).await {
         Ok(0) => return Err("Connection to stdout closed".to_string()),
         Ok(_) => buffer.trim().to_string(),
-        Err(err) => return Err(format!("Failed to read input: {err}"))
+        Err(err) => return Err(format!("Failed to read input: {err}")),
     };
 
     Ok(line)

@@ -142,10 +142,7 @@ async fn handle_connection(
                             count = db.len() as i32;
                         }
 
-                        let result: Vec<(&u32, &String)> = db
-                            .iter()
-                            .take(count as usize)
-                            .collect();
+                        let result: Vec<(&u32, &String)> = db.iter().take(count as usize).collect();
 
                         write_ok!(stream, format!("{:?}", result));
                     }
@@ -173,13 +170,10 @@ async fn handle_connection(
                             count = db.len() as i32;
                         }
 
-                        let result: Vec<(&u32, &String)> = db
-                            .iter()
-                            .take(count as usize)
-                            .collect();
+                        let result: Vec<(&u32, &String)> = db.iter().take(count as usize).collect();
 
                         write_ok!(stream, format!("{}", result.len()));
-                    },
+                    }
                     Expr::Range(start, mut end) => {
                         if end < 0 {
                             end = db.len() as i32;
@@ -211,7 +205,7 @@ async fn handle_connection(
                     }
                     Expr::Range(start, mut end) => {
                         if end < 0 {
-                            end = (db.len() - 1)as i32;
+                            end = (db.len() - 1) as i32;
                         }
 
                         let mut result = String::new();
@@ -224,7 +218,8 @@ async fn handle_connection(
                             stream,
                             format!(
                                 "[{}]",
-                                result.trim()
+                                result
+                                    .trim()
                                     .split_whitespace()
                                     .collect::<Vec<&str>>()
                                     .join(", ")
