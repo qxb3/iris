@@ -58,7 +58,7 @@ iris@0.1.0 $ SET 0 hello world
 ok
 
 iris@0.1.0 $ GET 0
-ok hello world
+ok "hello world"
 
 iris@0.1.0 $ █
 ```
@@ -69,9 +69,9 @@ iris@0.1.0 $ █
 
 - [x] A working server
 - [x] A working client repl
+- [x] Better client and server code (idk, i think its much better than before)
 - [ ] `list` command
 - [ ] Make the thing an installable cli
-- [ ] Better client and server code
 - [ ] Types maybe?
 - [ ] Rust client crate
 - [ ] Javascript client
