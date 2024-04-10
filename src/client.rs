@@ -1,7 +1,7 @@
 use indoc::{indoc, printdoc};
-use std::{io::Write, process};
+use std::process;
 use tokio::{
-    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader},
     net::TcpStream,
 };
 
@@ -14,7 +14,7 @@ pub async fn start(addr: &str) {
         }
     };
 
-    let local_addr = &stream.peer_addr().unwrap();
+    let local_addr = stream.peer_addr().unwrap();
 
     println!(
         indoc! {"
@@ -36,80 +36,61 @@ pub async fn start(addr: &str) {
     );
 
     loop {
-        let line = match readline() {
+        let line = match prompt().await {
             Ok(line) => line,
             Err(err) => {
-                println!("Failed prompt: {err}");
+                println!("{err}");
                 process::exit(1);
             }
         };
 
-        let command = line
-            .clone()
-            .splitn(3, ' ')
-            .collect::<Vec<&str>>()
-            .get(0)
-            .unwrap()
-            .to_lowercase();
+        if line.is_empty() {
+            continue;
+        }
 
-        match command.as_str() {
-            "help" => printdoc! {"
-                • What is iris?
-                  iris is a simple key value database,
-                  every value in iris is considered to be a string (for now)
-                  and you, yourself will be the one to parse the types.
+        match stream.write_all(format!("{line}\n").as_bytes()).await {
+             Ok(_) => {
+                let mut buf_reader = BufReader::new(&mut stream);
+                let mut buffer = [0; 4096];
 
-                • Commands
-                  <id>   = number.
-                  <expr> = number or a range (0..5).
-                  <data> = string.
-
-                 - GET <id>           : gets a value on a key.
-                 - LST <expr>         : list keys and its value based on expression.
-                 - CNT <expr>         : count all values.
-                 - SET <expr> <data>  : sets a value on a key.
-                 - APP <id> <data>    : appends a data on id.
-                 - DEL <expr>         : deletes a value on a key.
-                 - help               : show this message.
-                 - clear              : clear prompt.
-                 - exit               : exit repl.
-            "},
-            "clear" => print!("\x1B[2J\x1B[1;1H"),
-            "exit" => process::exit(0),
-            _ => {
-                if let Err(err) = stream.write_all(format!("{line}\n").as_bytes()).await {
-                    println!("Failed to send: {err}");
-                    continue;
-                }
-
-                let mut buffer = String::new();
-                let server_resp = match BufReader::new(&mut stream).read_line(&mut buffer).await {
+                let server_resp = match buf_reader.read(&mut buffer).await {
                     Ok(0) => {
                         println!("Connection closed.");
                         process::exit(1);
                     }
-                    Ok(_) => buffer,
+                    Ok(byte) => String::from_utf8_lossy(&buffer[..byte]),
                     Err(err) => {
-                        println!("> Failed to read stream: {err}");
-                        continue;
+                        println!("Failed to read: {err}.");
+                        process::exit(1);
                     }
                 };
 
                 println!("> {server_resp}");
+            },
+            Err(err) => {
+                println!("Failed to send: {err}");
+                process::exit(1);
             }
         }
     }
 }
 
-fn readline() -> Result<String, String> {
-    write!(std::io::stdout(), "iris@{} $ ", env!("CARGO_PKG_VERSION"))
-        .map_err(|e| e.to_string())?;
-    std::io::stdout().flush().map_err(|e| e.to_string())?;
+async fn prompt() -> Result<String, String> {
+    let mut stdin = BufReader::new(tokio::io::stdin());
+    let mut stdout = tokio::io::stdout();
+
+    stdout.write(format!("iris@{} $ ", env!("CARGO_PKG_VERSION")).as_bytes()).await
+        .map_err(|e| format!("Failed to write: {e}"))?;
+
+    stdout.flush().await
+        .map_err(|e| format!("Failed to flush: {e}"))?;
 
     let mut buffer = String::new();
-    std::io::stdin()
-        .read_line(&mut buffer)
-        .map_err(|e| e.to_string())?;
+    let line = match stdin.read_line(&mut buffer).await {
+        Ok(0) => return Err("Connection to stdout closed".to_string()),
+        Ok(_) => buffer.trim().to_string(),
+        Err(err) => return Err(format!("Failed to read input: {err}"))
+    };
 
-    Ok(buffer.trim().to_string())
+    Ok(line)
 }
