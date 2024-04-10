@@ -53,8 +53,9 @@ pub async fn start(addr: &str) {
                   and you, yourself will be the one to parse the types.
 
                 • Commands
+                 - GET <id:number>: gets a value on a key.
+                 - LST <count:number>: list keys and its value based on count.
                  - SET <id:number> <data:string>: sets a value on a key.
-                 - GET <id:number>: sets a value on a key.
                  - DEL <id:number>: deletes a value on a key.
                  - help: how this message.
                  - clear: clear prompt.

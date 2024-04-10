@@ -142,6 +142,15 @@ async fn handle_connection(stream: &mut TcpStream, db_clone: Arc<Mutex<HashMap<u
 
                 write_ok!(stream, format!("{:?}\n", result));
             },
+            "LST" => {
+                let db = db_clone.lock().await;
+                let result: String = db
+                    .iter()
+                    .map(|(key, value)| format!("{key} => {value}\n"))
+                    .collect();
+
+                stream.write_all(format!("{}\n", result).as_bytes()).await.unwrap();
+            },
             "SET" => {
                 let mut db = db_clone.lock().await;
                 db.insert(id, data);
