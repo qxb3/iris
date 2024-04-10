@@ -1,9 +1,9 @@
+use indoc::{indoc, printdoc};
 use std::{io::Write, process};
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
     net::TcpStream,
 };
-use indoc::{indoc, printdoc};
 
 pub async fn start(addr: &str) {
     let mut stream = match TcpStream::connect(addr).await {
@@ -44,7 +44,13 @@ pub async fn start(addr: &str) {
             }
         };
 
-        let command = line.clone().splitn(3, ' ').collect::<Vec<&str>>().get(0).unwrap().to_lowercase();
+        let command = line
+            .clone()
+            .splitn(3, ' ')
+            .collect::<Vec<&str>>()
+            .get(0)
+            .unwrap()
+            .to_lowercase();
         match command.as_str() {
             "help" => printdoc! {"
                 • What is iris?
@@ -76,7 +82,7 @@ pub async fn start(addr: &str) {
             Ok(0) => {
                 println!("Connection closed.");
                 process::exit(1);
-            },
+            }
             Ok(_) => buffer,
             Err(err) => {
                 println!("> Failed to read stream: {err}");
@@ -89,7 +95,8 @@ pub async fn start(addr: &str) {
 }
 
 fn readline() -> Result<String, String> {
-    write!(std::io::stdout(), "iris@{} $ ", env!("CARGO_PKG_VERSION")).map_err(|e| e.to_string())?;
+    write!(std::io::stdout(), "iris@{} $ ", env!("CARGO_PKG_VERSION"))
+        .map_err(|e| e.to_string())?;
     std::io::stdout().flush().map_err(|e| e.to_string())?;
 
     let mut buffer = String::new();

@@ -1,8 +1,8 @@
 use clap::{arg, value_parser, Command};
 
 mod client;
-mod server;
 mod core;
+mod server;
 
 #[tokio::main]
 async fn main() {
@@ -41,7 +41,7 @@ fn command() -> Command {
                         .value_parser(value_parser!(bool))
                         .default_value("false")
                         .required(false),
-                ])
+                ]),
         )
         .subcommand(
             Command::new("client")
@@ -54,7 +54,7 @@ fn command() -> Command {
                     arg!(-p --port <number> "The port the client connect to")
                         .value_parser(value_parser!(u32))
                         .default_value("3000")
-                        .required(false)
-                ])
+                        .required(false),
+                ]),
         )
 }

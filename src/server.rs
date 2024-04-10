@@ -1,28 +1,30 @@
+use indoc::indoc;
 use std::{collections::HashMap, io, process, sync::Arc};
 use tokio::{
     io::AsyncWriteExt,
     net::{TcpListener, TcpStream},
     sync::Mutex,
 };
-use indoc::indoc;
 
 use crate::core::iris_command::{parse_command, Command, Expr};
 
 macro_rules! write_error {
-    ($stream:expr, $message:expr) => {
-        {
-            $stream.write_all(format!("err {}\n", $message).as_bytes()).await.unwrap();
-            continue;
-        }
-    };
+    ($stream:expr, $message:expr) => {{
+        $stream
+            .write_all(format!("err {}\n", $message).as_bytes())
+            .await
+            .unwrap();
+        continue;
+    }};
 }
 
 macro_rules! write_ok {
-    ($stream:expr, $message:expr) => {
-        {
-            $stream.write_all(format!("{}\n", $message).as_bytes()).await.unwrap();
-        }
-    };
+    ($stream:expr, $message:expr) => {{
+        $stream
+            .write_all(format!("{}\n", $message).as_bytes())
+            .await
+            .unwrap();
+    }};
 }
 
 macro_rules! debug {
@@ -82,14 +84,18 @@ pub async fn start(addr: &str, debug: bool) {
     }
 }
 
-async fn handle_connection(stream: &mut TcpStream, db_clone: Arc<Mutex<HashMap<u32, String>>>, debug: bool) {
+async fn handle_connection(
+    stream: &mut TcpStream,
+    db_clone: Arc<Mutex<HashMap<u32, String>>>,
+    debug: bool,
+) {
     loop {
         let mut buffer = [0; 4096];
         let line = match stream.try_read(&mut buffer) {
             Ok(0) => {
                 debug!("Connection closed.", debug);
                 break;
-            },
+            }
             Ok(bytes) => std::str::from_utf8(&buffer[..bytes]).unwrap().trim(),
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => continue,
             Err(err) => {
@@ -104,24 +110,29 @@ async fn handle_connection(stream: &mut TcpStream, db_clone: Arc<Mutex<HashMap<u
 
         let command = parse_command(line);
 
-        debug!(format!(
-            indoc! {"
+        debug!(
+            format!(
+                indoc! {"
                 Request:
                 - Command: {:?}
             "},
-            &command,
-        ), debug);
+                &command,
+            ),
+            debug
+        );
 
         match command {
             Command::Get { id } => {
                 let db = db_clone.lock().await;
                 let result = match db.get(&id) {
                     Some(item) => item,
-                    None => write_error!(stream, format!("Cannot find item with an id of \"{id}\""))
+                    None => {
+                        write_error!(stream, format!("Cannot find item with an id of \"{id}\""))
+                    }
                 };
 
                 write_ok!(stream, format!("{:?}\n", result));
-            },
+            }
             Command::List { expr } => {
                 let db = db_clone.lock().await;
 
@@ -134,17 +145,17 @@ async fn handle_connection(stream: &mut TcpStream, db_clone: Arc<Mutex<HashMap<u
                             .collect();
 
                         write_ok!(stream, result);
-                    },
+                    }
                     Expr::Range(_start, _end) => {}
                 }
-            },
-            Command::Count { expr } => {},
+            }
+            Command::Count { expr } => {}
             Command::Set { id, data } => {
                 let mut db = db_clone.lock().await;
                 db.insert(id, data);
 
                 write_ok!(stream, format!("{}", id));
-            },
+            }
             Command::Append { id, data } => {}
             Command::Delete { expr } => {
                 let mut db = db_clone.lock().await;
@@ -153,11 +164,11 @@ async fn handle_connection(stream: &mut TcpStream, db_clone: Arc<Mutex<HashMap<u
                         db.remove(&(id as u32));
 
                         write_ok!(stream, format!("{}", id));
-                    },
+                    }
                     Expr::Range(_start, _end) => {}
                 }
             }
-            Command::Invalid { reason } => write_error!(stream, reason)
+            Command::Invalid { reason } => write_error!(stream, reason),
         }
     }
 }
