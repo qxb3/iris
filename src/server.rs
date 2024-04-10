@@ -1,5 +1,5 @@
 use indoc::indoc;
-use std::{collections::HashMap, io, process, sync::Arc};
+use std::{collections::HashMap, fmt::write, io, process, sync::Arc};
 use tokio::{
     io::AsyncWriteExt,
     net::{TcpListener, TcpStream},
@@ -151,7 +151,7 @@ async fn handle_connection(
                     }
                     Expr::Range(start, mut end) => {
                         if end < 0 {
-                            end = (db.len() - 1) as i32;
+                            end = db.len() as i32;
                         }
 
                         let result: Vec<(&u32, &String)> = db
@@ -212,14 +212,27 @@ async fn handle_connection(
                     }
                     Expr::Range(start, mut end) => {
                         if end < 0 {
-                            end = db.len() as i32;
+                            end = (db.len() - 1)as i32;
                         }
 
-                        let result = String::new();
+                        let mut result = String::new();
                         for id in start..end + 1 {
                             db.remove(&(id as u32));
-                            write_ok!(stream, format!("{}", id));
+                            result += format!("{id} ").as_str();
                         }
+
+                        write_ok!(
+                            stream,
+                            format!(
+                                "[{}]",
+                                result.trim()
+                                    .split_whitespace()
+                                    .collect::<Vec<&str>>()
+                                    .join(", ")
+                                    .trim()
+                                    .to_string()
+                            )
+                        );
                     }
                 }
             }
