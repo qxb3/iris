@@ -149,7 +149,15 @@ async fn handle_connection(
 
                         write_ok!(stream, format!("{:?}", result));
                     }
-                    Expr::Range(_start, _end) => {}
+                    Expr::Range(start, end) => {
+                        let result: Vec<(&u32, &String)> = db
+                            .iter()
+                            .skip(start as usize)
+                            .take(end as usize)
+                            .collect();
+
+                        write_ok!(stream, format!("{:?}", result));
+                    }
                 }
             }
             Command::Count { expr } => {}
