@@ -72,11 +72,11 @@ iris@0.1.0 $ █
 - [x] Better client and server code (idk, i think its much better than before)
 - [x] `list` command
 - [x] Make a better and sensible command parsing
-- [ ] Unrestrict id to just a string
-- [ ] Implement piping operator
+- [x] Unrestrict id to just a string
 - [ ] A more sensible non-idiotic server response
 - [ ] Server response in different formats (json)
 - [ ] Make the thing an installable cli
 - [ ] Rust client crate
 - [ ] Javascript client
 - [ ] Types maybe?
+- [ ] ~~Implement piping operator~~
