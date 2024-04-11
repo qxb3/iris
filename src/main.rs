@@ -1,7 +1,7 @@
 use clap::{arg, value_parser, Command};
 
 mod client;
-mod core;
+mod lib;
 mod server;
 
 #[tokio::main]
