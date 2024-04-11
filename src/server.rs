@@ -249,7 +249,6 @@ async fn handle_command<'a>(
                 }
             }
         }
-        Command::Pipe {  } => Ok("fk u".to_string()),
         Command::Invalid { reason } => Err(reason.to_string()),
     }
 }
