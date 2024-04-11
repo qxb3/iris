@@ -1,4 +1,5 @@
 use indoc::indoc;
+use async_recursion::async_recursion;
 use std::{collections::HashMap, io, process, sync::Arc};
 use tokio::{
     io::AsyncWriteExt,
@@ -108,7 +109,7 @@ async fn handle_connection(
         }
 
         let command = parse_command(line);
-        match *handle_command(&command, &db_clone).await {
+        match handle_command(&command, &db_clone).await {
             Ok(resp) => write_ok!(stream, resp),
             Err(err) => write_error!(stream, err)
         }
@@ -127,19 +128,20 @@ async fn handle_connection(
     }
 }
 
+#[async_recursion]
 async fn handle_command<'a>(
     command: &Command<'a>,
     db_clone: &Arc<Mutex<HashMap<u32, String>>>
-) -> Box<Result<String, String>> {
+) -> Result<String, String> {
     match command {
         Command::Get { id } => {
             let db = db_clone.lock().await;
             let result = match db.get(&id) {
                 Some(item) => item,
-                None => return Box::new(Err(format!("Cannot find item with an id of \"{id}\"")))
+                None => return Err(format!("Cannot find item with an id of \"{id}\""))
             };
 
-            Box::new(Ok(format!("{:?}", result)))
+            Ok(format!("{:?}", result))
         }
         Command::List { expr } => {
             let db = db_clone.lock().await;
@@ -155,7 +157,7 @@ async fn handle_command<'a>(
                         .take(count as usize)
                         .collect();
 
-                    Box::new(Ok(format!("{:?}", result)))
+                    Ok(format!("{:?}", result))
                 }
                 Expr::Range(start, mut end) => {
                     if end < 0 {
@@ -168,7 +170,7 @@ async fn handle_command<'a>(
                         .take((end + 1) as usize)
                         .collect();
 
-                    Box::new(Ok(format!("{:?}", result)))
+                    Ok(format!("{:?}", result))
                 }
             }
         }
@@ -186,7 +188,7 @@ async fn handle_command<'a>(
                         .take(count as usize)
                         .collect();
 
-                    Box::new(Ok(format!("{}", result.len())))
+                    Ok(format!("{}", result.len()))
                 }
                 Expr::Range(start, mut end) => {
                     if end < 0 {
@@ -199,7 +201,7 @@ async fn handle_command<'a>(
                         .take((end + 1) as usize)
                         .collect();
 
-                    Box::new(Ok(format!("{}", result.len())))
+                    Ok(format!("{}", result.len()))
                 }
             }
         }
@@ -208,7 +210,7 @@ async fn handle_command<'a>(
 
             db.insert(*id, data.to_owned());
 
-            Box::new(Ok(format!("{}", id)))
+            Ok(format!("{}", id))
         }
         Command::Delete { expr } => {
             let mut db = db_clone.lock().await;
@@ -216,8 +218,8 @@ async fn handle_command<'a>(
             match expr {
                 Expr::Number(id) => {
                     match db.remove(&(*id as u32)) {
-                        Some(data) => Box::new(Ok(data)),
-                        None => return Box::new(Err(format!("Cannot delete item with an id of {id}")))
+                        Some(data) => Ok(data),
+                        None => return Err(format!("Cannot delete item with an id of {id}"))
                     }
                 }
                 Expr::Range(start, mut end) => {
@@ -232,7 +234,7 @@ async fn handle_command<'a>(
                         }
                     }
 
-                    Box::new(Ok(
+                    Ok(
                         format!(
                             "[{}]",
                             result
@@ -243,10 +245,11 @@ async fn handle_command<'a>(
                                 .trim()
                                 .to_string()
                         )
-                    ))
+                    )
                 }
             }
         }
-        Command::Invalid { reason } => Box::new(Err(reason.to_string())),
+        Command::Pipe {  } => Ok("fk u".to_string()),
+        Command::Invalid { reason } => Err(reason.to_string()),
     }
 }

@@ -11,6 +11,7 @@ pub enum Command<'a> {
     Count { expr: Expr },
     Set { id: u32, data: String },
     Delete { expr: Expr },
+    Pipe {},
     Invalid { reason: &'a str },
 }
 
