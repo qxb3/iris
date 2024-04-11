@@ -1,15 +1,16 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
+    ID(String),
     Number(i32),
     Range(i32, i32)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Command<'a> {
-    Get { id: u32 },
+    Get { id: String },
     List { expr: Expr },
     Count { expr: Expr },
-    Set { id: u32, data: String },
+    Set { id: String, data: String },
     Delete { expr: Expr },
     Invalid { reason: &'a str },
 }
@@ -23,10 +24,7 @@ pub fn parse_command(input: &str) -> Command {
         ["LST" | "CNT" | "DEL"] => Command::Invalid { reason: "Missing Expression" },
         ["SET" | "APP", _id] => Command::Invalid { reason: "Missing Data" },
 
-        ["GET", id] => match id.parse::<u32>() {
-            Ok(id) => Command::Get { id },
-            Err(_) => Command::Invalid { reason: "Invalid ID" },
-        },
+        ["GET", id] => Command::Get { id: id.to_string() },
 
         ["LST", expr] => match parse_expr(expr) {
             Ok(expr) => Command::List { expr },
@@ -38,10 +36,7 @@ pub fn parse_command(input: &str) -> Command {
             Err(err) => Command::Invalid { reason: err },
         },
 
-        ["SET", id, data @ ..] => match id.parse::<u32>() {
-            Ok(id) => Command::Set { id, data: data.join(" ") },
-            Err(_) => Command::Invalid { reason: "Invalid ID" },
-        },
+        ["SET", id, data @ ..] => Command::Set { id: id.to_string(), data: data.join(" ") },
 
         ["DEL", expr] => match parse_expr(expr) {
             Ok(expr) => Command::Delete { expr },
@@ -66,5 +61,5 @@ fn parse_expr<'a>(expr_str: &'a str) -> Result<Expr, &'a str> {
         }
     }
 
-    Err("Invalid expression")
+    Ok(Expr::ID(expr_str.to_string()))
 }

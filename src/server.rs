@@ -1,5 +1,4 @@
 use indoc::indoc;
-use async_recursion::async_recursion;
 use std::{collections::HashMap, io, process, sync::Arc};
 use tokio::{
     io::AsyncWriteExt,
@@ -65,7 +64,7 @@ pub async fn start(addr: &str, debug: bool) {
         local_addr.port()
     );
 
-    let db: Arc<Mutex<HashMap<u32, String>>> = Arc::new(Mutex::new(HashMap::new()));
+    let db: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
 
     loop {
         let mut stream = match listener.accept().await {
@@ -86,7 +85,7 @@ pub async fn start(addr: &str, debug: bool) {
 
 async fn handle_connection(
     stream: &mut TcpStream,
-    db_clone: Arc<Mutex<HashMap<u32, String>>>,
+    db_clone: Arc<Mutex<HashMap<String, String>>>,
     debug: bool,
 ) {
     loop {
@@ -128,15 +127,14 @@ async fn handle_connection(
     }
 }
 
-#[async_recursion]
 async fn handle_command<'a>(
     command: &Command<'a>,
-    db_clone: &Arc<Mutex<HashMap<u32, String>>>
+    db_clone: &Arc<Mutex<HashMap<String, String>>>
 ) -> Result<String, String> {
     match command {
         Command::Get { id } => {
             let db = db_clone.lock().await;
-            let result = match db.get(&id) {
+            let result = match db.get(id) {
                 Some(item) => item,
                 None => return Err(format!("Cannot find item with an id of \"{id}\""))
             };
@@ -152,9 +150,10 @@ async fn handle_command<'a>(
                         count = db.len() as i32;
                     }
 
-                    let result: Vec<(&u32, &String)> = db
+                    let result: Vec<(String, String)> = db
                         .iter()
                         .take(count as usize)
+                        .map(|(id, data)| (id.to_owned(), data.to_owned()))
                         .collect();
 
                     Ok(format!("{:?}", result))
@@ -164,14 +163,16 @@ async fn handle_command<'a>(
                         end = db.len() as i32;
                     }
 
-                    let result: Vec<(&u32, &String)> = db
+                    let result: Vec<(String, String)> = db
                         .iter()
                         .skip(*start as usize)
                         .take((end + 1) as usize)
+                        .map(|(id, data)| (id.to_owned(), data.to_owned()))
                         .collect();
 
                     Ok(format!("{:?}", result))
-                }
+                },
+                _ => return Err("This is expression is not allowed".to_string())
             }
         }
         Command::Count { expr } => {
@@ -183,9 +184,10 @@ async fn handle_command<'a>(
                         count = db.len() as i32;
                     }
 
-                    let result: Vec<(&u32, &String)> = db
+                    let result: Vec<(String, String)> = db
                         .iter()
                         .take(count as usize)
+                        .map(|(id, data)| (id.to_owned(), data.to_owned()))
                         .collect();
 
                     Ok(format!("{}", result.len()))
@@ -195,20 +197,22 @@ async fn handle_command<'a>(
                         end = db.len() as i32;
                     }
 
-                    let result: Vec<(&u32, &String)> = db
+                    let result: Vec<(String, String)> = db
                         .iter()
                         .skip(*start as usize)
                         .take((end + 1) as usize)
+                        .map(|(id, data)| (id.clone(), data.clone()))
                         .collect();
 
                     Ok(format!("{}", result.len()))
-                }
+                },
+                _ => return Err("This is expression is not allowed".to_string())
             }
         }
         Command::Set { id, data } => {
             let mut db = db_clone.lock().await;
 
-            db.insert(*id, data.to_owned());
+            db.insert(id.to_owned(), data.to_owned());
 
             Ok(format!("{}", id))
         }
@@ -216,10 +220,10 @@ async fn handle_command<'a>(
             let mut db = db_clone.lock().await;
 
             match expr {
-                Expr::Number(id) => {
-                    match db.remove(&(*id as u32)) {
+                Expr::ID(id) => {
+                    match db.remove(id) {
                         Some(data) => Ok(data),
-                        None => return Err(format!("Cannot delete item with an id of {id}"))
+                        None => return Err(format!("Cannot delete item with an id of {:?}", id))
                     }
                 }
                 Expr::Range(start, mut end) => {
@@ -227,26 +231,22 @@ async fn handle_command<'a>(
                         end = (db.len() - 1) as i32;
                     }
 
-                    let mut result = String::new();
-                    for id in *start..end + 1 {
-                        if let Some(data) = db.remove(&(id as u32)) {
-                            result.push_str(format!("{data} ").as_str());
-                        }
+                    let mut result = vec![];
+                    let items: Vec<(String, String)> = db
+                        .iter()
+                        .skip(*start as usize)
+                        .take((end + 1) as usize)
+                        .map(|(id, data)| (id.clone(), data.clone()))
+                        .collect();
+
+                    for (id, data) in items {
+                        db.remove(&id);
+                        result.push((id, data));
                     }
 
-                    Ok(
-                        format!(
-                            "[{}]",
-                            result
-                                .trim()
-                                .split_whitespace()
-                                .collect::<Vec<&str>>()
-                                .join(", ")
-                                .trim()
-                                .to_string()
-                        )
-                    )
-                }
+                    Ok(format!("{:?}", result))
+                },
+                _ => return Err("This is expression is not allowed".to_string())
             }
         }
         Command::Invalid { reason } => Err(reason.to_string()),
