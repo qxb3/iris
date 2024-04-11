@@ -225,7 +225,26 @@ async fn handle_command<'a>(
                         Some(data) => Ok(data),
                         None => return Err(format!("Cannot delete item with an id of {:?}", id))
                     }
-                }
+                },
+                Expr::Number(mut count) => {
+                    if count == -1 {
+                        count = db.len() as i32;
+                    }
+
+                    let mut result = vec![];
+                    let items: Vec<(String, String)> = db
+                        .iter()
+                        .take(count as usize)
+                        .map(|(id, data)| (id.clone(), data.clone()))
+                        .collect();
+
+                    for (id, data) in items {
+                        db.remove(&id);
+                        result.push((id, data));
+                    }
+
+                    Ok(format!("{:?}", result))
+                },
                 Expr::Range(start, mut end) => {
                     if end < 0 {
                         end = (db.len() - 1) as i32;
@@ -246,7 +265,6 @@ async fn handle_command<'a>(
 
                     Ok(format!("{:?}", result))
                 },
-                _ => return Err("This is expression is not allowed".to_string())
             }
         }
         Command::Invalid { reason } => Err(reason.to_string()),
