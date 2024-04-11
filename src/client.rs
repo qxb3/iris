@@ -64,8 +64,8 @@ pub async fn start(addr: &str) {
                   and you, yourself will be the one to parse the types.
 
                 • Commands
-                  <id>   = number.
-                  <expr> = number or a range (0..5).
+                  <id>   = string.
+                  <expr> = number | <id> | range (0..5).
                   <data> = string.
 
                  - GET <id>           : gets a value on a key.
