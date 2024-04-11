@@ -14,7 +14,6 @@ macro_rules! write_error {
             .write_all(format!("err {}\n", $message).as_bytes())
             .await
             .unwrap();
-        continue;
     }};
 }
 
@@ -109,131 +108,145 @@ async fn handle_connection(
         }
 
         let command = parse_command(line);
+        match *handle_command(&command, &db_clone).await {
+            Ok(resp) => write_ok!(stream, resp),
+            Err(err) => write_error!(stream, err)
+        }
 
         debug!(
             format!(
                 indoc! {"
                 Request:
-                - Command: {:?}
+                - Command: {:?} => {:?}
             "},
-                &command,
+                &line,
+                &command
             ),
             debug
         );
+    }
+}
 
-        match command {
-            Command::Get { id } => {
-                let db = db_clone.lock().await;
-                let result = match db.get(&id) {
-                    Some(item) => item,
-                    None => {
-                        write_error!(stream, format!("Cannot find item with an id of \"{id}\""))
-                    }
-                };
+async fn handle_command<'a>(
+    command: &Command<'a>,
+    db_clone: &Arc<Mutex<HashMap<u32, String>>>
+) -> Box<Result<String, String>> {
+    match command {
+        Command::Get { id } => {
+            let db = db_clone.lock().await;
+            let result = match db.get(&id) {
+                Some(item) => item,
+                None => return Box::new(Err(format!("Cannot find item with an id of \"{id}\"")))
+            };
 
-                write_ok!(stream, format!("{:?}\n", result));
-            }
-            Command::List { expr } => {
-                let db = db_clone.lock().await;
-
-                match expr {
-                    Expr::Number(mut count) => {
-                        if count == -1 {
-                            count = db.len() as i32;
-                        }
-
-                        let result: Vec<(&u32, &String)> = db.iter().take(count as usize).collect();
-
-                        write_ok!(stream, format!("{:?}", result));
-                    }
-                    Expr::Range(start, mut end) => {
-                        if end < 0 {
-                            end = db.len() as i32;
-                        }
-
-                        let result: Vec<(&u32, &String)> = db
-                            .iter()
-                            .skip(start as usize)
-                            .take((end + 1) as usize)
-                            .collect();
-
-                        write_ok!(stream, format!("{:?}", result));
-                    }
-                }
-            }
-            Command::Count { expr } => {
-                let db = db_clone.lock().await;
-
-                match expr {
-                    Expr::Number(mut count) => {
-                        if count == -1 {
-                            count = db.len() as i32;
-                        }
-
-                        let result: Vec<(&u32, &String)> = db.iter().take(count as usize).collect();
-
-                        write_ok!(stream, format!("{}", result.len()));
-                    }
-                    Expr::Range(start, mut end) => {
-                        if end < 0 {
-                            end = db.len() as i32;
-                        }
-
-                        let result: Vec<(&u32, &String)> = db
-                            .iter()
-                            .skip(start as usize)
-                            .take((end + 1) as usize)
-                            .collect();
-
-                        write_ok!(stream, format!("{}", result.len()));
-                    }
-                }
-            }
-            Command::Set { id, data } => {
-                let mut db = db_clone.lock().await;
-                db.insert(id, data);
-
-                write_ok!(stream, format!("{}", id));
-            }
-            Command::Delete { expr } => {
-                let mut db = db_clone.lock().await;
-
-                match expr {
-                    Expr::Number(id) => {
-                        match db.remove(&(id as u32)) {
-                            Some(data) => write_ok!(stream, data),
-                            None => write_error!(stream, format!("Cannot delete item with an id of {id}"))
-                        }
-                    }
-                    Expr::Range(start, mut end) => {
-                        if end < 0 {
-                            end = (db.len() - 1) as i32;
-                        }
-
-                        let mut result = String::new();
-                        for id in start..end + 1 {
-                            if let Some(data) = db.remove(&(id as u32)) {
-                                result.push_str(format!("{data} ").as_str());
-                            }
-                        }
-
-                        write_ok!(
-                            stream,
-                            format!(
-                                "[{}]",
-                                result
-                                    .trim()
-                                    .split_whitespace()
-                                    .collect::<Vec<&str>>()
-                                    .join(", ")
-                                    .trim()
-                                    .to_string()
-                            )
-                        );
-                    }
-                }
-            }
-            Command::Invalid { reason } => write_error!(stream, reason),
+            Box::new(Ok(format!("{:?}", result)))
         }
+        Command::List { expr } => {
+            let db = db_clone.lock().await;
+
+            match expr {
+                Expr::Number(mut count) => {
+                    if count == -1 {
+                        count = db.len() as i32;
+                    }
+
+                    let result: Vec<(&u32, &String)> = db
+                        .iter()
+                        .take(count as usize)
+                        .collect();
+
+                    Box::new(Ok(format!("{:?}", result)))
+                }
+                Expr::Range(start, mut end) => {
+                    if end < 0 {
+                        end = db.len() as i32;
+                    }
+
+                    let result: Vec<(&u32, &String)> = db
+                        .iter()
+                        .skip(*start as usize)
+                        .take((end + 1) as usize)
+                        .collect();
+
+                    Box::new(Ok(format!("{:?}", result)))
+                }
+            }
+        }
+        Command::Count { expr } => {
+            let db = db_clone.lock().await;
+
+            match expr {
+                Expr::Number(mut count) => {
+                    if count == -1 {
+                        count = db.len() as i32;
+                    }
+
+                    let result: Vec<(&u32, &String)> = db
+                        .iter()
+                        .take(count as usize)
+                        .collect();
+
+                    Box::new(Ok(format!("{}", result.len())))
+                }
+                Expr::Range(start, mut end) => {
+                    if end < 0 {
+                        end = db.len() as i32;
+                    }
+
+                    let result: Vec<(&u32, &String)> = db
+                        .iter()
+                        .skip(*start as usize)
+                        .take((end + 1) as usize)
+                        .collect();
+
+                    Box::new(Ok(format!("{}", result.len())))
+                }
+            }
+        }
+        Command::Set { id, data } => {
+            let mut db = db_clone.lock().await;
+
+            db.insert(*id, data.to_owned());
+
+            Box::new(Ok(format!("{}", id)))
+        }
+        Command::Delete { expr } => {
+            let mut db = db_clone.lock().await;
+
+            match expr {
+                Expr::Number(id) => {
+                    match db.remove(&(*id as u32)) {
+                        Some(data) => Box::new(Ok(data)),
+                        None => return Box::new(Err(format!("Cannot delete item with an id of {id}")))
+                    }
+                }
+                Expr::Range(start, mut end) => {
+                    if end < 0 {
+                        end = (db.len() - 1) as i32;
+                    }
+
+                    let mut result = String::new();
+                    for id in *start..end + 1 {
+                        if let Some(data) = db.remove(&(id as u32)) {
+                            result.push_str(format!("{data} ").as_str());
+                        }
+                    }
+
+                    Box::new(Ok(
+                        format!(
+                            "[{}]",
+                            result
+                                .trim()
+                                .split_whitespace()
+                                .collect::<Vec<&str>>()
+                                .join(", ")
+                                .trim()
+                                .to_string()
+                        )
+                    ))
+                }
+            }
+        }
+        Command::Invalid { reason } => Box::new(Err(reason.to_string())),
     }
 }
