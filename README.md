@@ -73,6 +73,8 @@ iris@0.1.0 $ █
 - [x] `list` command
 - [x] Make a better and sensible command parsing
 - [ ] Implement piping operator
+- [ ] A more sensible non-idiotic server response
+- [ ] Server response in different formats (json)
 - [ ] Make the thing an installable cli
 - [ ] Rust client crate
 - [ ] Javascript client
