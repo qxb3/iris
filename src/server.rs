@@ -143,7 +143,7 @@ async fn handle_command<'a>(
                 None => return Err(format!("Cannot find item with an id of \"{id}\""))
             };
 
-            Ok(format!("{:?}", result))
+            Ok(result.to_owned())
         }
         Command::List { expr } => {
             let db = db_clone.lock().await;
