@@ -8,21 +8,25 @@ use tokio::{
 
 use crate::command::{parse_command, Command, Expr};
 
+macro_rules! write {
+    ($stream:expr, $input:expr) => {
+        $stream.write($input).await.unwrap();
+    };
+}
+
 macro_rules! write_error {
-    ($stream:expr, $message:expr) => {{
-        $stream
-            .write_all(format!("err {}\n", $message).as_bytes())
-            .await
-            .unwrap();
+    ($stream:expr, $($message:expr),*) => {{
+        write!($stream, b"err ");
+        $(write!($stream, $message.as_bytes());)*
+        write!($stream, b"\n");
     }};
 }
 
 macro_rules! write_ok {
-    ($stream:expr, $message:expr) => {{
-        $stream
-            .write_all(format!("{}\n", $message).as_bytes())
-            .await
-            .unwrap();
+    ($stream:expr, $($message:expr),*) => {{
+        write!($stream, b"ok ");
+        $(write!($stream, $message.as_bytes());)*
+        write!($stream, b"\n");
     }};
 }
 
