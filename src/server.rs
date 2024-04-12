@@ -9,21 +9,27 @@ use tokio::{
 
 use crate::command::{parse_command, Command, Expr};
 
-macro_rules! respond_command_ok {
-    ($format:expr, $message:expr) => {
+macro_rules! respond {
+    ($stream:expr, $response:expr) => {{
+        $stream.write(format!("{}\n", $response).as_bytes()).await.unwrap();
+    }};
+}
+
+macro_rules! respond_ok {
+    ($stream:expr, $format:expr, $response:expr) => {
         match $format.as_str() {
-            "default" => Ok($message),
-            "json" => Ok(json!({ "status": "ok", "response": $message }).to_string()),
+            "default" => respond!($stream, format!("ok {}", $response)),
+            "json" => respond!($stream, json!({ "status": "ok", "response": $response })),
             _ => unreachable!()
         }
     };
 }
 
-macro_rules! respond_command_err {
-    ($format:expr, $message:expr) => {
+macro_rules! respond_err {
+    ($stream:expr, $format:expr, $response:expr) => {
         match $format.as_str() {
-            "default" => Ok($message),
-            "json" => Ok(json!({ "status": "err", "response": $message }).to_string()),
+            "default" => respond!($stream, format!("err {}", $response)),
+            "json" => respond!($stream, json!({ "status": "err", "response": $response })),
             _ => unreachable!()
         }
     };
@@ -113,17 +119,9 @@ async fn handle_connection(
         }
 
         let command = parse_command(line);
-        match handle_command(&command, &format, &db_clone).await {
-            Ok(resp) => match format.as_str() {
-                "default" => { stream.write(format!("ok {resp}\n").as_bytes()).await.unwrap(); },
-                "json" => { stream.write(format!("{resp}\n").as_bytes()).await.unwrap(); },
-                _ => unreachable!()
-            },
-            Err(err) => match format.as_str() {
-                "default" => { stream.write(format!("err {err}\n").as_bytes()).await.unwrap(); },
-                "json" => { stream.write(format!("{err}\n").as_bytes()).await.unwrap(); },
-                _ => unreachable!()
-            },
+        match handle_command(&command, &db_clone).await {
+            Ok(response) => respond_ok!(stream, format, response),
+            Err(err) => respond_err!(stream, format, err),
         }
 
         debug!(
@@ -142,7 +140,6 @@ async fn handle_connection(
 
 async fn handle_command<'a>(
     command: &Command<'a>,
-    format: &String,
     db_clone: &Arc<Mutex<HashMap<String, String>>>
 ) -> Result<String, String> {
     match command {
@@ -150,10 +147,10 @@ async fn handle_command<'a>(
             let db = db_clone.lock().await;
             let result = match db.get(id) {
                 Some(item) => item,
-                None => return respond_command_err!(format, format!("Cannot find item with an id of {id}"))
+                None => return Err(format!("Cannot find item with an id of {id}"))
             };
 
-            respond_command_ok!(format, result.to_owned())
+            Ok(result.to_owned())
         }
         Command::List { expr } => {
             let db = db_clone.lock().await;
@@ -170,7 +167,7 @@ async fn handle_command<'a>(
                         .map(|(id, data)| (id.to_owned(), data.to_owned()))
                         .collect();
 
-                    respond_command_ok!(format, format!("{:?}", result))
+                    Ok(format!("{:?}", result))
                 }
                 Expr::Range(start, mut end) => {
                     if end < 0 {
@@ -184,9 +181,9 @@ async fn handle_command<'a>(
                         .map(|(id, data)| (id.to_owned(), data.to_owned()))
                         .collect();
 
-                    respond_command_ok!(format, format!("{:?}", result))
+                    Ok(format!("{:?}", result))
                 },
-                _ => respond_command_err!(format, "This is expression is not allowed".to_string())
+                _ => Err("This is expression is not allowed".to_string())
             }
         }
         Command::Count { expr } => {
@@ -204,7 +201,7 @@ async fn handle_command<'a>(
                         .map(|(id, data)| (id.to_owned(), data.to_owned()))
                         .collect();
 
-                    respond_command_ok!(format, format!("{}", result.len()))
+                    Ok(format!("{}", result.len()))
                 }
                 Expr::Range(start, mut end) => {
                     if end < 0 {
@@ -218,9 +215,9 @@ async fn handle_command<'a>(
                         .map(|(id, data)| (id.clone(), data.clone()))
                         .collect();
 
-                    respond_command_ok!(format, format!("{}", result.len()))
+                    Ok(format!("{}", result.len()))
                 },
-                _ => respond_command_err!(format, "This is expression is not allowed".to_string())
+                _ => Err("This is expression is not allowed".to_string())
             }
         }
         Command::Set { id, data } => {
@@ -228,7 +225,7 @@ async fn handle_command<'a>(
 
             db.insert(id.to_owned(), data.to_owned());
 
-            respond_command_ok!(format, id.to_owned())
+            Ok(id.to_owned())
         }
         Command::Delete { expr } => {
             let mut db = db_clone.lock().await;
@@ -236,8 +233,8 @@ async fn handle_command<'a>(
             match expr {
                 Expr::ID(id) => {
                     match db.remove(id) {
-                        Some(data) => respond_command_ok!(format, data),
-                        None => respond_command_err!(format, format!("Cannot delete item with an id of {:?}", id))
+                        Some(data) => Ok(data),
+                        None => Err(format!("Cannot delete item with an id of {:?}", id))
                     }
                 },
                 Expr::Number(mut count) => {
@@ -257,7 +254,7 @@ async fn handle_command<'a>(
                         result.push((id, data));
                     }
 
-                    respond_command_ok!(format, format!("{:?}", result))
+                    Ok(format!("{:?}", result))
                 },
                 Expr::Range(start, mut end) => {
                     if end < 0 {
@@ -277,10 +274,10 @@ async fn handle_command<'a>(
                         result.push((id, data));
                     }
 
-                    respond_command_ok!(format, format!("{:?}", result))
+                    Ok(format!("{:?}", result))
                 },
             }
         }
-        Command::Invalid { reason } => respond_command_err!(format, reason.to_string()),
+        Command::Invalid { reason } => Err(reason.to_string()),
     }
 }
