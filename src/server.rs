@@ -172,7 +172,7 @@ async fn handle_command<'a>(
 
                     Ok(format!("{:?}", result))
                 },
-                _ => return Err("This is expression is not allowed".to_string())
+                _ => Err("This is expression is not allowed".to_string())
             }
         }
         Command::Count { expr } => {
@@ -206,7 +206,7 @@ async fn handle_command<'a>(
 
                     Ok(format!("{}", result.len()))
                 },
-                _ => return Err("This is expression is not allowed".to_string())
+                _ => Err("This is expression is not allowed".to_string())
             }
         }
         Command::Set { id, data } => {
@@ -214,7 +214,7 @@ async fn handle_command<'a>(
 
             db.insert(id.to_owned(), data.to_owned());
 
-            Ok(format!("{}", id))
+            Ok(id.to_owned())
         }
         Command::Delete { expr } => {
             let mut db = db_clone.lock().await;
@@ -223,7 +223,7 @@ async fn handle_command<'a>(
                 Expr::ID(id) => {
                     match db.remove(id) {
                         Some(data) => Ok(data),
-                        None => return Err(format!("Cannot delete item with an id of {:?}", id))
+                        None => Err(format!("Cannot delete item with an id of {:?}", id))
                     }
                 },
                 Expr::Number(mut count) => {

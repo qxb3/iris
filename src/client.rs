@@ -52,7 +52,7 @@ pub async fn start(addr: &str) {
             .clone()
             .splitn(3, ' ')
             .collect::<Vec<&str>>()
-            .get(0)
+            .first()
             .unwrap()
             .to_lowercase();
 
