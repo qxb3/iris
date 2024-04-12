@@ -1,4 +1,5 @@
-use clap::{arg, value_parser, Command};
+use std::process;
+use clap::{arg, error::ErrorKind, value_parser, Command};
 
 mod client;
 mod server;
@@ -6,14 +7,23 @@ mod command;
 
 #[tokio::main]
 async fn main() {
-    let matches = command().get_matches();
+    let mut command = command();
 
-    match matches.subcommand() {
+    match command.clone().get_matches().subcommand() {
         Some(("server", sub)) => {
             let port = sub.get_one::<u32>("port").unwrap();
+            let format = match sub.get_one::<String>("format").unwrap() {
+                f if f == "default" || f == "json" => f.to_string(),
+                _ => {
+                    let error = command.error(ErrorKind::InvalidValue, "Invalid format value.\nvalid values: ('default', 'json')");
+                    println!("{error}");
+
+                    process::exit(1);
+                }
+            };
             let debug = sub.get_one::<bool>("debug").unwrap();
 
-            server::start(format!("127.0.0.1:{port}").as_str(), debug.to_owned()).await;
+            server::start(format!("127.0.0.1:{port}").as_str(), format, debug.to_owned()).await;
         }
         Some(("client", sub)) => {
             let host = sub.get_one::<String>("host").unwrap();
@@ -36,6 +46,11 @@ fn command() -> Command {
                     arg!(-p --port <number> "The port the server will run on")
                         .value_parser(value_parser!(u32))
                         .default_value("3000")
+                        .required(false),
+                    arg!(-f --format <string> "The format of the server response ('default', 'json')")
+                        .value_name("json")
+                        .value_parser(value_parser!(String))
+                        .default_value("default")
                         .required(false),
                     arg!(-d --debug "The port the server will run on")
                         .value_parser(value_parser!(bool))

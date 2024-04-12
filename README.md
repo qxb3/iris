@@ -74,7 +74,7 @@ iris@0.1.0 $ █
 - [x] Make a better and sensible command parsing
 - [x] Unrestrict id to just a string
 - [x] A more sensible non-idiotic server response (still idiotic but i have a vision now? idk)
-- [ ] Server response in different formats (json)
+- [x] Server response in different formats (json)
 - [ ] Make the thing an installable cli
 - [ ] Rust client crate
 - [ ] Javascript client
