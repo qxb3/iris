@@ -107,23 +107,42 @@ async fn handle_connection(
             continue;
         }
 
-        let command = parse_command(line);
-        match handle_command(&command, &db_clone).await {
-            Ok(resp) => write_ok!(stream, resp),
-            Err(err) => write_error!(stream, err)
+        let lines = line.split("~>").map(|line| line.trim()).collect::<Vec<&str>>();
+
+        let mut prev_command: Option<String> = None;
+        for line in lines {
+            let input = match prev_command.clone() {
+                Some(output) => format!("{} {}", line, output),
+                None => line.to_string()
+            };
+
+            let command = parse_command(input.as_str());
+
+            match handle_command(&command, &db_clone).await {
+                Ok(resp) => prev_command = Some(resp),
+                Err(err) => {
+                    write_error!(stream, err);
+                    break;
+                }
+            }
         }
 
-        debug!(
-            format!(
-                indoc! {"
-                Request:
-                - Command: {:?} => {:?}
-            "},
-                &line,
-                &command
-            ),
-            debug
-        );
+        match prev_command {
+            Some(output) => write_ok!(stream, output),
+            None => {}
+        }
+
+        // debug!(
+        //     format!(
+        //         indoc! {"
+        //         Request:
+        //         - Command: {:?} => {:?}
+        //     "},
+        //         &line,
+        //         &command
+        //     ),
+        //     debug
+        // );
     }
 }
 
