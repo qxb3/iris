@@ -6,7 +6,7 @@ use tokio::{
     sync::Mutex,
 };
 
-use crate::lib::command::{parse_command, Command, Expr};
+use crate::command::{parse_command, Command, Expr};
 
 macro_rules! write_error {
     ($stream:expr, $message:expr) => {{

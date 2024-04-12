@@ -1,8 +1,8 @@
 use clap::{arg, value_parser, Command};
 
 mod client;
-mod lib;
 mod server;
+mod command;
 
 #[tokio::main]
 async fn main() {
