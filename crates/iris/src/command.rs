@@ -20,9 +20,12 @@ pub fn parse_command(input: String) -> Command {
 
     match parts.as_slice() {
         // Error Handling
-        ["GET" | "SET" | "APP"] => Command::Invalid { reason: "Missing ID".to_owned() },
-        ["LST" | "CNT" | "DEL"] => Command::Invalid { reason: "Missing Expression".to_string() },
-        ["SET" | "APP", _id] => Command::Invalid { reason: "Missing Data".to_string() },
+        ["GET"] => Command::Invalid { reason: r#""GET" requires an ID"#.to_owned() },
+        ["SET"] => Command::Invalid { reason: r#""SET" requires an ID"#.to_owned() },
+        ["LST"] => Command::Invalid { reason: r#""LST" requires an Expression"#.to_owned() },
+        ["CNT"] => Command::Invalid { reason: r#""LST" requires an Expression"#.to_owned() },
+        ["DEL"] => Command::Invalid { reason: r#""LST" requires an Expression"#.to_owned() },
+        ["SET", _id] => Command::Invalid { reason: r#""SET" requires a Data"#.to_string() },
 
         ["GET", id] => Command::Get { id: id.to_string() },
 
