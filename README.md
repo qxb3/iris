@@ -75,8 +75,8 @@ iris@0.1.0 $ █
 - [x] Unrestrict id to just a string
 - [x] A more sensible non-idiotic server response (still idiotic but i have a vision now? idk)
 - [x] Server response in different formats (json)
+- [x] Implement piping operator
 - [ ] Make the thing an installable cli
 - [ ] Rust client crate
 - [ ] Javascript client
 - [ ] Types maybe?
-- [ ] ~~Implement piping operator~~
