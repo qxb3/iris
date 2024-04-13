@@ -118,24 +118,11 @@ async fn handle_connection(
             continue;
         }
 
-        let lines = line.split("~>").map(str::trim).collect::<Vec<&str>>();
-
-        let mut prev_output: Option<String> = None;
-
-        for line in lines {
-            let input = prev_output.as_ref().map_or_else(|| line.to_string(), |output| format!("{} {}", line, output));
-            let command = parse_command(&input);
-
-            match handle_command(&command, &db_clone).await {
-                Ok(resp) => prev_output = Some(resp),
-                Err(err) => {
-                    respond_err!(stream, format, err);
-                    continue;
-                }
-            }
+        let inputs = line.split("~>").map(str::trim).collect::<Vec<&str>>();
+        match handle_pipe(inputs, &db_clone).await {
+            Ok(response) => respond_ok!(stream, format, response),
+            Err(err) => respond_err!(stream, format, err)
         }
-
-        respond_ok!(stream, format, prev_output.unwrap());
 
         debug!(
             format!(
@@ -150,14 +137,32 @@ async fn handle_connection(
     }
 }
 
-async fn handle_command<'a>(
-    command: &Command<'a>,
+async fn handle_pipe<'a>(
+    inputs: Vec<&str>,
+    db_clone: &Arc<Mutex<HashMap<String, String>>>
+) -> Result<String, String> {
+    let mut prev = String::new();
+
+    for input in inputs {
+        let command = parse_command(format!("{} {}", input, prev));
+
+        match handle_response(command, &db_clone).await {
+            Ok(resp) => prev = resp,
+            Err(err) => return Err(err)
+        }
+    }
+
+    Ok(prev)
+}
+
+async fn handle_response<'a>(
+    command: Command,
     db_clone: &Arc<Mutex<HashMap<String, String>>>
 ) -> Result<String, String> {
     match command {
         Command::Get { id } => {
             let db = db_clone.lock().await;
-            let result = match db.get(id) {
+            let result = match db.get(&id) {
                 Some(item) => item,
                 None => return Err(format!("Cannot find item with an id of {id}"))
             };
@@ -188,7 +193,7 @@ async fn handle_command<'a>(
 
                     let result: Vec<(String, String)> = db
                         .iter()
-                        .skip(*start as usize)
+                        .skip(start as usize)
                         .take((end + 1) as usize)
                         .map(|(id, data)| (id.to_owned(), data.to_owned()))
                         .collect();
@@ -222,7 +227,7 @@ async fn handle_command<'a>(
 
                     let result: Vec<(String, String)> = db
                         .iter()
-                        .skip(*start as usize)
+                        .skip(start as usize)
                         .take((end + 1) as usize)
                         .map(|(id, data)| (id.clone(), data.clone()))
                         .collect();
@@ -244,7 +249,7 @@ async fn handle_command<'a>(
 
             match expr {
                 Expr::ID(id) => {
-                    match db.remove(id) {
+                    match db.remove(&id) {
                         Some(data) => Ok(data),
                         None => Err(format!("Cannot delete item with an id of {:?}", id))
                     }
@@ -276,7 +281,7 @@ async fn handle_command<'a>(
                     let mut result = vec![];
                     let items: Vec<(String, String)> = db
                         .iter()
-                        .skip(*start as usize)
+                        .skip(start as usize)
                         .take((end + 1) as usize)
                         .map(|(id, data)| (id.clone(), data.clone()))
                         .collect();
