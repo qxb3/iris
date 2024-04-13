@@ -73,10 +73,10 @@ iris@0.1.0 $ █
 - [x] `list` command
 - [x] Make a better and sensible command parsing
 - [x] Unrestrict id to just a string
-- [x] A more sensible non-idiotic server response (still idiotic but i have a vision now? idk)
 - [x] Server response in different formats (json)
 - [x] Implement piping operator
+- [ ] Start writing the rust client crate so i can see i can do the below
+- [ ] A more sensible non-idiotic server response (still idiotic but i have a vision now? idk)
 - [ ] Make the thing an installable cli
-- [ ] Rust client crate
 - [ ] Javascript client
 - [ ] Types maybe?
