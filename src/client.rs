@@ -52,7 +52,7 @@ pub async fn start(addr: &str) {
             .clone()
             .splitn(3, ' ')
             .collect::<Vec<&str>>()
-            .get(0)
+            .first()
             .unwrap()
             .to_lowercase();
 
@@ -90,14 +90,23 @@ pub async fn start(addr: &str) {
                             println!("Connection closed.");
                             process::exit(1);
                         }
-                        Ok(byte) => String::from_utf8_lossy(&buffer[..byte]),
+                        Ok(byte) => String::from_utf8_lossy(&buffer[..byte])
+                            .splitn(2, ' ')
+                            .map(|b| b.trim().to_string())
+                            .collect::<Vec<String>>(),
                         Err(err) => {
                             println!("Failed to read: {err}.");
                             process::exit(1);
                         }
                     };
 
-                    println!("> {server_resp}");
+                    let status = server_resp.first().unwrap().to_uppercase();
+                    let resp = match server_resp.get(1) {
+                        Some(resp) => resp,
+                        None => ""
+                    };
+
+                    println!("{} > \"{}\"", status, resp);
                 }
                 Err(err) => {
                     println!("Failed to send: {err}");

@@ -1,29 +1,38 @@
 use indoc::indoc;
 use std::{collections::HashMap, io, process, sync::Arc};
+use serde_json::json;
 use tokio::{
     io::AsyncWriteExt,
     net::{TcpListener, TcpStream},
     sync::Mutex,
 };
 
-use crate::lib::command::{parse_command, Command, Expr};
+use crate::command::{parse_command, Command, Expr};
 
-macro_rules! write_error {
-    ($stream:expr, $message:expr) => {{
-        $stream
-            .write_all(format!("err {}\n", $message).as_bytes())
-            .await
-            .unwrap();
+macro_rules! respond {
+    ($stream:expr, $response:expr) => {{
+        $stream.write(format!("{}\n", $response).as_bytes()).await.unwrap();
     }};
 }
 
-macro_rules! write_ok {
-    ($stream:expr, $message:expr) => {{
-        $stream
-            .write_all(format!("{}\n", $message).as_bytes())
-            .await
-            .unwrap();
-    }};
+macro_rules! respond_ok {
+    ($stream:expr, $format:expr, $response:expr) => {
+        match $format.as_str() {
+            "default" => respond!($stream, format!("ok {}", $response)),
+            "json" => respond!($stream, json!({ "status": "ok", "response": $response })),
+            _ => unreachable!()
+        }
+    };
+}
+
+macro_rules! respond_err {
+    ($stream:expr, $format:expr, $response:expr) => {
+        match $format.as_str() {
+            "default" => respond!($stream, format!("err {}", $response)),
+            "json" => respond!($stream, json!({ "status": "err", "response": $response })),
+            _ => unreachable!()
+        }
+    };
 }
 
 macro_rules! debug {
@@ -34,7 +43,7 @@ macro_rules! debug {
     };
 }
 
-pub async fn start(addr: &str, debug: bool) {
+pub async fn start(addr: &str, format: String, debug: bool) {
     let listener = match TcpListener::bind(addr).await {
         Ok(listener) => listener,
         Err(err) => {
@@ -75,10 +84,11 @@ pub async fn start(addr: &str, debug: bool) {
             }
         };
 
+        let format_clone = format.clone();
         let db_clone = Arc::clone(&db);
 
         tokio::spawn(async move {
-            handle_connection(&mut stream, db_clone, debug).await;
+            handle_connection(&mut stream, db_clone, format_clone, debug).await;
         });
     }
 }
@@ -86,7 +96,8 @@ pub async fn start(addr: &str, debug: bool) {
 async fn handle_connection(
     stream: &mut TcpStream,
     db_clone: Arc<Mutex<HashMap<String, String>>>,
-    debug: bool,
+    format: String,
+    debug: bool
 ) {
     loop {
         let mut buffer = [0; 4096];
@@ -107,42 +118,35 @@ async fn handle_connection(
             continue;
         }
 
-        let lines = line.split("~>").map(|line| line.trim()).collect::<Vec<&str>>();
+        let lines = line.split("~>").map(str::trim).collect::<Vec<&str>>();
 
-        let mut prev_command: Option<String> = None;
+        let mut prev_output: Option<String> = None;
+
         for line in lines {
-            let input = match prev_command.clone() {
-                Some(output) => format!("{} {}", line, output),
-                None => line.to_string()
-            };
-
-            let command = parse_command(input.as_str());
+            let input = prev_output.as_ref().map_or_else(|| line.to_string(), |output| format!("{} {}", line, output));
+            let command = parse_command(&input);
 
             match handle_command(&command, &db_clone).await {
-                Ok(resp) => prev_command = Some(resp),
+                Ok(resp) => prev_output = Some(resp),
                 Err(err) => {
-                    write_error!(stream, err);
-                    break;
+                    respond_err!(stream, format, err);
+                    continue;
                 }
             }
         }
 
-        match prev_command {
-            Some(output) => write_ok!(stream, output),
-            None => {}
-        }
+        respond_ok!(stream, format, prev_output.unwrap());
 
-        // debug!(
-        //     format!(
-        //         indoc! {"
-        //         Request:
-        //         - Command: {:?} => {:?}
-        //     "},
-        //         &line,
-        //         &command
-        //     ),
-        //     debug
-        // );
+        debug!(
+            format!(
+                indoc! {"
+                Request:
+                - Command: {:?}
+            "},
+                &line,
+            ),
+            debug
+        );
     }
 }
 
@@ -155,10 +159,10 @@ async fn handle_command<'a>(
             let db = db_clone.lock().await;
             let result = match db.get(id) {
                 Some(item) => item,
-                None => return Err(format!("Cannot find item with an id of \"{id}\""))
+                None => return Err(format!("Cannot find item with an id of {id}"))
             };
 
-            Ok(format!("{:?}", result))
+            Ok(result.to_owned())
         }
         Command::List { expr } => {
             let db = db_clone.lock().await;
@@ -191,7 +195,7 @@ async fn handle_command<'a>(
 
                     Ok(format!("{:?}", result))
                 },
-                _ => return Err("This is expression is not allowed".to_string())
+                _ => Err("This is expression is not allowed".to_string())
             }
         }
         Command::Count { expr } => {
@@ -225,7 +229,7 @@ async fn handle_command<'a>(
 
                     Ok(format!("{}", result.len()))
                 },
-                _ => return Err("This is expression is not allowed".to_string())
+                _ => Err("This is expression is not allowed".to_string())
             }
         }
         Command::Set { id, data } => {
@@ -233,7 +237,7 @@ async fn handle_command<'a>(
 
             db.insert(id.to_owned(), data.to_owned());
 
-            Ok(format!("{}", id))
+            Ok(id.to_owned())
         }
         Command::Delete { expr } => {
             let mut db = db_clone.lock().await;
@@ -242,7 +246,7 @@ async fn handle_command<'a>(
                 Expr::ID(id) => {
                     match db.remove(id) {
                         Some(data) => Ok(data),
-                        None => return Err(format!("Cannot delete item with an id of {:?}", id))
+                        None => Err(format!("Cannot delete item with an id of {:?}", id))
                     }
                 },
                 Expr::Number(mut count) => {

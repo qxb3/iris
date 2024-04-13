@@ -47,7 +47,7 @@ pub fn parse_command(input: &str) -> Command {
     }
 }
 
-fn parse_expr<'a>(expr_str: &'a str) -> Result<Expr, &'a str> {
+fn parse_expr(expr_str: &str) -> Result<Expr, &str> {
     if let Ok(number) = expr_str.parse::<i32>() {
         return Ok(Expr::Number(number));
     }
