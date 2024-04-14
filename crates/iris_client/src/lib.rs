@@ -126,7 +126,7 @@ impl IrisClient {
         Ok(server_resp)
     }
 
-    pub async fn count(self: &mut Self, expr: Expression) -> Result<ServerResponse, String> {
+    pub async fn count(self: &mut Self, expr: Expression) -> Result<u32, String> {
         match expr {
             Expression::Number(count) => {
                 self.socket
@@ -143,7 +143,9 @@ impl IrisClient {
         }
 
         let server_resp = self.server_response().await?;
-        Ok(server_resp)
+        let count = str::parse::<u32>(server_resp.data.as_str()).unwrap();
+
+        Ok(count)
     }
 
     pub async fn raw(self: &mut Self, command: &str) -> Result<ServerResponse, String> {
