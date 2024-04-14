@@ -8,6 +8,15 @@ use tokio::{
     net::TcpStream,
 };
 
+macro_rules! send_command {
+    ($socket:expr, $command:expr) => {{
+        $socket
+            .write_all($command.as_bytes())
+            .await
+            .map_err(|err| format!("Failed to send the command: {err}"))?;
+    }};
+}
+
 #[derive(Debug)]
 pub enum Expression {
     Number(i32),
@@ -40,10 +49,7 @@ pub struct IrisClient {
 
 impl IrisClient {
     pub async fn set(self: &mut Self, id: &str, data: &str) -> Result<ServerResponse, String> {
-        self.socket
-            .write_all(format!("SET {id} {data}\n").as_bytes())
-            .await
-            .map_err(|err| format!("Failed to send the command: {err}"))?;
+        send_command!(self.socket, format!("SET {id} {data}\n"));
 
         let server_resp = self.server_response().await?;
         Ok(server_resp)
@@ -51,24 +57,9 @@ impl IrisClient {
 
     pub async fn delete<'a>(self: &mut Self, expr: DeleteExpression<'a>) -> Result<Vec<Item>, String> {
         match expr {
-            DeleteExpression::Number(count) => {
-                self.socket
-                    .write_all(format!("DEL {count}\n").as_bytes())
-                    .await
-                    .map_err(|err| format!("Failed to send the command: {err}"))?;
-            }
-            DeleteExpression::ID(id) => {
-                self.socket
-                    .write_all(format!("DEL {id}\n").as_bytes())
-                    .await
-                    .map_err(|err| format!("Failed to send the command: {err}"))?;
-            }
-            DeleteExpression::Range(range) => {
-                self.socket
-                    .write_all(format!("DEL {:?}\n", range).as_bytes())
-                    .await
-                    .map_err(|err| format!("Failed to send the command: {err}"))?;
-            }
+            DeleteExpression::Number(count) => send_command!(self.socket, format!("DEL {count}\n")),
+            DeleteExpression::ID(id) => send_command!(self.socket, format!("DEL {id}\n")),
+            DeleteExpression::Range(range) => send_command!(self.socket, format!("DEL {:?}\n", range))
         }
 
         let server_resp = self.server_response().await?;
@@ -78,10 +69,7 @@ impl IrisClient {
     }
 
     pub async fn get(self: &mut Self, id: &str) -> Result<ServerResponse, String> {
-        self.socket
-            .write_all(format!("GET {id}\n").as_bytes())
-            .await
-            .map_err(|err| format!("Failed to send the command: {err}"))?;
+        send_command!(self.socket, format!("GET {id}\n"));
 
         let server_resp = self.server_response().await?;
         Ok(server_resp)
@@ -89,18 +77,8 @@ impl IrisClient {
 
     pub async fn list(self: &mut Self, expr: Expression) -> Result<Vec<Item>, String> {
         match expr {
-            Expression::Number(count) => {
-                self.socket
-                    .write_all(format!("LST {count}\n").as_bytes())
-                    .await
-                    .map_err(|err| format!("Failed to send the command: {err}"))?;
-            }
-            Expression::Range(range) => {
-                self.socket
-                    .write_all(format!("LST {:?}\n", range).as_bytes())
-                    .await
-                    .map_err(|err| format!("Failed to send the command: {err}"))?;
-            }
+            Expression::Number(count) => send_command!(self.socket, format!("LST {count}\n")),
+            Expression::Range(range) => send_command!(self.socket, format!("LST {:?}\n", range))
         }
 
         let server_resp = self.server_response().await?;
@@ -111,18 +89,8 @@ impl IrisClient {
 
     pub async fn count(self: &mut Self, expr: Expression) -> Result<u32, String> {
         match expr {
-            Expression::Number(count) => {
-                self.socket
-                    .write_all(format!("CNT {count}\n").as_bytes())
-                    .await
-                    .map_err(|err| format!("Failed to send the command: {err}"))?;
-            }
-            Expression::Range(range) => {
-                self.socket
-                    .write_all(format!("CNT {:?}\n", range).as_bytes())
-                    .await
-                    .map_err(|err| format!("Failed to send the command: {err}"))?;
-            }
+            Expression::Number(count) => send_command!(self.socket, format!("CNT {count}\n")),
+            Expression::Range(range) => send_command!(self.socket, format!("CNT {:?}\n", range))
         }
 
         let server_resp = self.server_response().await?;
@@ -132,10 +100,7 @@ impl IrisClient {
     }
 
     pub async fn raw(self: &mut Self, command: &str) -> Result<ServerResponse, String> {
-        self.socket
-            .write_all(format!("{command}\n").as_bytes())
-            .await
-            .map_err(|err| format!("Failed to send the command: {err}"))?;
+        send_command!(self.socket, format!("{command}\n"));
 
         let server_resp = self.server_response().await?;
         Ok(server_resp)
