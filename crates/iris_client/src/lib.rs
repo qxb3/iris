@@ -48,11 +48,11 @@ pub struct IrisClient {
 }
 
 impl IrisClient {
-    pub async fn set(self: &mut Self, id: &str, data: &str) -> Result<ServerResponse, String> {
+    pub async fn set(self: &mut Self, id: &str, data: &str) -> Result<String, String> {
         send_command!(self.socket, format!("SET {id} {data}\n"));
 
         let server_resp = self.server_response().await?;
-        Ok(server_resp)
+        Ok(server_resp.data)
     }
 
     pub async fn delete<'a>(self: &mut Self, expr: DeleteExpression<'a>) -> Result<Vec<Item>, String> {
@@ -68,11 +68,11 @@ impl IrisClient {
         Ok(deleted)
     }
 
-    pub async fn get(self: &mut Self, id: &str) -> Result<ServerResponse, String> {
+    pub async fn get(self: &mut Self, id: &str) -> Result<String, String> {
         send_command!(self.socket, format!("GET {id}\n"));
 
         let server_resp = self.server_response().await?;
-        Ok(server_resp)
+        Ok(server_resp.data)
     }
 
     pub async fn list(self: &mut Self, expr: Expression) -> Result<Vec<Item>, String> {
