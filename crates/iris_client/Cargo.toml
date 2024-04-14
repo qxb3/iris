@@ -1,5 +1,9 @@
 [package]
 name = "iris_client"
+description = "A command like in-memory database in rust "
+repository = "https://github.com/qxb3/iris"
+license-file = "GPL-3.0"
+readme = "README.md"
 version = "0.1.0"
 edition = "2021"
 
