@@ -1,18 +1,14 @@
 <h1 align="center">iris_client</h1>
 <p align="center">A crate to interact with iris. an in-memory database</p>
 
-<br>
-
-# Installation
+## Installation
 
 ```toml
 [dependencies]
 iris_client = "0.1.0"
 ```
 
-<br>
-
-# Example
+## Example
 
 ```rust
 use iris_client::{connect, Expression};
@@ -52,9 +48,7 @@ async fn main() -> Result<(), String> {
 }
 ```
 
-<br>
-
-# Pipes
+## Pipes
 
 You also can pipe commands. The return value of the previous command will be appended to the current command
 
@@ -77,8 +71,6 @@ async fn main() -> Result<(), String> {
 }
 ```
 
-<br>
-
-# Contribution
+## Contribution
 
 Contributions to iris are welcome! If you have ideas for improvements, new features, or bug fixes, feel free to open an issue or submit a pull request on [iris](https://github.com/qxb3/iris)
