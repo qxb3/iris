@@ -9,7 +9,7 @@
 
 ```toml
 [dependencies]
-iris_client = "0.1.0"
+iris_client = "0.1.1"
 ```
 
 ## Example
