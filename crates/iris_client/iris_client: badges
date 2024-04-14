@@ -1,4 +1,8 @@
 <h1 align="center">iris_client</h1>
+<p align="center">
+    <img src="https://img.shields.io/crates/v/iris_client"/>
+    <img src="https://img.shields.io/crates/dr/iris_client"/>
+</p>
 <p align="center">A crate to interact with iris. an in-memory database</p>
 
 ## Installation
