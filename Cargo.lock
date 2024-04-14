@@ -193,6 +193,9 @@ dependencies = [
 [[package]]
 name = "iris_client"
 version = "0.1.0"
+dependencies = [
+ "tokio",
+]
 
 [[package]]
 name = "itoa"

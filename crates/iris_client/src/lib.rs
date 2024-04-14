@@ -1,0 +1,202 @@
+use std::ops::Range;
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::TcpStream,
+};
+
+#[derive(Debug)]
+pub struct ServerResponse {
+    pub status: String,
+    pub data: String,
+}
+
+#[derive(Debug)]
+pub enum Expression {
+    Number(i32),
+    Range(Range<i32>)
+}
+
+#[derive(Debug)]
+pub enum DeleteExpression<'a> {
+    Number(i32),
+    ID(&'a str),
+    Range(Range<i32>)
+}
+
+#[derive(Debug)]
+pub struct IrisClient {
+    socket: TcpStream,
+}
+
+#[derive(Debug)]
+pub struct PipeBuilder<'a> {
+    command: String,
+    client: &'a mut IrisClient
+}
+
+impl<'a> PipeBuilder<'a> {
+    pub fn set(self: &'a mut Self, id: &str, data: &str) -> Self {
+        self.command.push_str(format!("SET {id} {data} ~>").as_str());
+
+        Self {
+            command: self.command.clone(),
+            client: self.client
+        }
+    }
+
+    pub fn get(self: &'a mut Self, id: &str) -> Self {
+        self.command.push_str(format!(" GET {id}").as_str());
+
+        Self {
+            command: self.command.clone(),
+            client: self.client
+        }
+    }
+
+    pub async fn execute(self: &mut Self) -> Result<ServerResponse, String> {
+        let server_resp = self.client.raw(self.command.trim()).await?;
+        Ok(server_resp)
+    }
+}
+
+impl IrisClient {
+    pub async fn set(self: &mut Self, id: &str, data: &str) -> Result<ServerResponse, String> {
+        self.socket
+            .write_all(format!("SET {id} {data}\n").as_bytes())
+            .await
+            .map_err(|err| format!("Failed to send the command: {err}"))?;
+
+        let server_resp = self.server_response().await?;
+        Ok(server_resp)
+    }
+
+    pub async fn delete<'a>(self: &mut Self, expr: DeleteExpression<'a>) -> Result<ServerResponse, String> {
+        match expr {
+            DeleteExpression::Number(count) => {
+                self.socket
+                    .write_all(format!("DEL {count}\n").as_bytes())
+                    .await
+                    .map_err(|err| format!("Failed to send the command: {err}"))?;
+            }
+            DeleteExpression::ID(id) => {
+                self.socket
+                    .write_all(format!("DEL {id}\n").as_bytes())
+                    .await
+                    .map_err(|err| format!("Failed to send the command: {err}"))?;
+            }
+            DeleteExpression::Range(range) => {
+                self.socket
+                    .write_all(format!("DEL {:?}\n", range).as_bytes())
+                    .await
+                    .map_err(|err| format!("Failed to send the command: {err}"))?;
+            }
+        }
+
+        let server_resp = self.server_response().await?;
+        Ok(server_resp)
+    }
+
+    pub async fn get(self: &mut Self, id: &str) -> Result<ServerResponse, String> {
+        self.socket
+            .write_all(format!("GET {id}\n").as_bytes())
+            .await
+            .map_err(|err| format!("Failed to send the command: {err}"))?;
+
+        let server_resp = self.server_response().await?;
+        Ok(server_resp)
+    }
+
+    pub async fn list(self: &mut Self, expr: Expression) -> Result<ServerResponse, String> {
+        match expr {
+            Expression::Number(count) => {
+                self.socket
+                    .write_all(format!("LST {count}\n").as_bytes())
+                    .await
+                    .map_err(|err| format!("Failed to send the command: {err}"))?;
+            }
+            Expression::Range(range) => {
+                self.socket
+                    .write_all(format!("LST {:?}\n", range).as_bytes())
+                    .await
+                    .map_err(|err| format!("Failed to send the command: {err}"))?;
+            }
+        }
+
+        let server_resp = self.server_response().await?;
+        Ok(server_resp)
+    }
+
+    pub async fn count(self: &mut Self, expr: Expression) -> Result<ServerResponse, String> {
+        match expr {
+            Expression::Number(count) => {
+                self.socket
+                    .write_all(format!("CNT {count}\n").as_bytes())
+                    .await
+                    .map_err(|err| format!("Failed to send the command: {err}"))?;
+            }
+            Expression::Range(range) => {
+                self.socket
+                    .write_all(format!("CNT {:?}\n", range).as_bytes())
+                    .await
+                    .map_err(|err| format!("Failed to send the command: {err}"))?;
+            }
+        }
+
+        let server_resp = self.server_response().await?;
+        Ok(server_resp)
+    }
+
+    pub async fn raw(self: &mut Self, command: &str) -> Result<ServerResponse, String> {
+        self.socket
+            .write_all(format!("{command}\n").as_bytes())
+            .await
+            .map_err(|err| format!("Failed to send the command: {err}"))?;
+
+        let server_resp = self.server_response().await?;
+        Ok(server_resp)
+    }
+
+    pub fn pipe(self: &mut Self) -> PipeBuilder {
+        PipeBuilder {
+            command: String::new(),
+            client: self
+        }
+    }
+
+    async fn server_response(self: &mut Self) -> Result<ServerResponse, String> {
+        let mut buf_reader = BufReader::new(&mut self.socket);
+        let mut buffer = String::new();
+        let server_resp = match buf_reader.read_line(&mut buffer).await {
+            Ok(0) => return Err("Connection closed".to_string()),
+            Ok(_) => {
+                let response = self.parse_response(buffer.trim().to_string());
+
+                if response.status == "err" {
+                    return Err(response.data);
+                }
+
+                response
+            }
+            Err(err) => return Err(format!("Failed to read server response: {err}")),
+        };
+
+        Ok(server_resp)
+    }
+
+    fn parse_response(&self, response: String) -> ServerResponse {
+        let parts: Vec<&str> = response.splitn(2, ' ').collect();
+
+        ServerResponse {
+            status: parts.get(0).unwrap().to_string(),
+            data: parts.get(1).unwrap().to_string(),
+        }
+    }
+}
+
+pub async fn connect(addr: &str) -> Result<IrisClient, String> {
+    let socket = TcpStream::connect(addr)
+        .await
+        .map_err(|err| format!("Failed to connect: {err}"))?;
+
+    Ok(IrisClient { socket })
+}
