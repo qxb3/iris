@@ -76,7 +76,7 @@ iris@0.1.0 $ █
 - [x] Server response in different formats (json)
 - [x] Implement piping operator
 - [x] Start writing the rust client crate so i can see i can do the below
-- [ ] A more sensible non-idiotic server response (still idiotic but i have a vision now? idk)
+- [x] A more sensible non-idiotic server response (still idiotic but i have a vision now? idk)
 - [ ] Make the thing an installable cli
 - [ ] Javascript client
 - [ ] Types maybe?
