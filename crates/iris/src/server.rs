@@ -160,6 +160,9 @@ async fn handle_response<'a>(
     db_clone: &Arc<Mutex<HashMap<String, String>>>
 ) -> Result<String, String> {
     match command {
+        Command::Ping {  } => {
+            Ok("PONG".to_string())
+        }
         Command::Get { id } => {
             let db = db_clone.lock().await;
             let result = match db.get(&id) {

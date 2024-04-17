@@ -7,6 +7,7 @@ pub enum Expr {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Command {
+    Ping {  },
     Get { id: String },
     List { expr: Expr },
     Count { expr: Expr },
@@ -26,6 +27,8 @@ pub fn parse_command(input: String) -> Command {
         ["CNT"] => Command::Invalid { reason: r#""LST" requires an Expression"#.to_owned() },
         ["DEL"] => Command::Invalid { reason: r#""LST" requires an Expression"#.to_owned() },
         ["SET", _id] => Command::Invalid { reason: r#""SET" requires a Data"#.to_string() },
+
+        ["PING"] => Command::Ping {  },
 
         ["GET", id] => Command::Get { id: id.to_string() },
 
