@@ -1,5 +1,8 @@
 [package]
 name = "iris"
+description = "A command like in-memory database in rust "
+repository = "https://github.com/qxb3/iris"
+license-file = "../../LICENSE"
 version = "0.2.0"
 edition = "2021"
 type = "bin"
