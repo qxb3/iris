@@ -1,5 +1,4 @@
 <h1 align="center">iris</h1>
-
 <p align="center">A command like in-memory database in rust</p>
 
 ```bash
@@ -54,29 +53,25 @@ Client is connected.
 • host:     http://127.0.0.1:3000
 • port:     3000
 
-iris@0.1.0 $ SET 0 hello world
-ok
+iris@0.1.0 $ SET foo hello world
+OK > "foo"
 
-iris@0.1.0 $ GET 0
-ok "hello world"
+iris@0.1.0 $ GET foo
+OK > "hello world"
 
 iris@0.1.0 $ █
 ```
 
-<br>
+### commands
 
-## Todo
+| Command                | Return |
+| ---------------------- | ------ |
+| `SET <id> <data>`      | ID     |
+| `GET <id>`             | Data   |
+| `DEL <expr>`           | Data[] |
+| `LST <expr>`           | Data[] |
+| `CNT <expr>`           | Number |
 
-- [x] A working server
-- [x] A working client repl
-- [x] Better client and server code (idk, i think its much better than before)
-- [x] `list` command
-- [x] Make a better and sensible command parsing
-- [x] Unrestrict id to just a string
-- [x] Server response in different formats (json)
-- [x] Implement piping operator
-- [x] Start writing the rust client crate so i can see i can do the below
-- [x] A more sensible non-idiotic server response (still idiotic but i have a vision now? idk)
-- [ ] Make the thing an installable cli
-- [ ] Javascript client
-- [ ] Types maybe?
+## Contribution
+
+Contributions to iris are welcome! If you have ideas for improvements, new features, or bug fixes, feel free to open an issue or submit a pull request on [iris](https://github.com/qxb3/iris)
