@@ -1,7 +1,7 @@
 <h1 align="center">iris</h1>
 <p align="center">
     <img src="https://img.shields.io/badge/contribution-welcome-green" />
-    <img src="https://img.shields.io/badge/build_with-love-red" />
+    <img src="https://img.shields.io/badge/built_with-love-red" />
 </p>
 <p align="center">A command like in-memory database in rust</p>
 
