@@ -72,8 +72,8 @@ pub async fn start(addr: &str) {
                  - LST <expr>         : list keys and its value based on expression.
                  - CNT <expr>         : count all values.
                  - SET <expr> <data>  : sets a value on a key.
-                 - APP <id> <data>    : appends a data on id.
                  - DEL <expr>         : deletes a value on a key.
+                 - PING               : ping the server.
                  - help               : show this message.
                  - clear              : clear prompt.
                  - exit               : exit repl.
