@@ -5,6 +5,8 @@
 </p>
 <p align="center">A command like in-memory database in rust</p>
 
+<br>
+
 ## Workspaces
 
 | Workspace                                                                     | Description                                               |
@@ -12,9 +14,19 @@
 | [iris](https://github.com/qxb3/iris/tree/main/crates/iris)                    | The iris cli that contains the server and the repl client |
 | [iris_client](https://github.com/qxb3/iris/tree/main/crates/iris_client)      | The rust client crate to interact with iris server        |
 
+<br>
+
 ## TCP Protocol
 
 <img src="https://raw.githubusercontent.com/qxb3/iris/main/repo/tcp_protocol.png" />
+
+<br>
+
+## Contribution
+
+Contributions to iris are welcome! If you have ideas for improvements, new features, or bug fixes, feel free to open an issue or submit a pull request on [iris](https://github.com/qxb3/iris)
+
+<br>
 
 ## Todo
 
@@ -30,3 +42,4 @@
 - [x] A more sensible non-idiotic server response (still idiotic but i have a vision now? idk)
 - [ ] Make the thing an installable cli
 - [ ] Javascript client?
+
