@@ -1,69 +1,20 @@
 <h1 align="center">iris</h1>
-
+<p align="center">
+    <img src="https://img.shields.io/badge/contribution-welcome-green" />
+    <img src="https://img.shields.io/badge/build_with-love-red" />
+</p>
 <p align="center">A command like in-memory database in rust</p>
 
-```bash
-Usage: iris <COMMAND>
+## Workspaces
 
-Commands:
-  server  Start the in-memory server
-  client  Enter client repl mode
-  help    Print this message or the help of the given subcommand(s)
+| Workspace                                                                     | Description                                               |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------- |
+| [iris](https://github.com/qxb3/iris/tree/main/crates/iris)                    | The iris cli that contains the server and the repl client |
+| [iris_client](https://github.com/qxb3/iris/tree/main/crates/iris_client)      | The rust client crate to interact with iris server        |
 
-Options:
-  -h, --help     Print help
-  -V, --version  Print version
-```
+## TCP Protocol
 
-<br>
-
-## Usage
-
-### server
-
-```bash
-$ iris server
-
-  ▀             ▀
-▄▄▄     ▄ ▄▄  ▄▄▄     ▄▄▄
-  █     █▀  ▀   █    █   ▀
-  █     █       █     ▀▀▀▄
-▄▄█▄▄   █     ▄▄█▄▄  ▀▄▄▄▀
-
-Server has started.
-• version:  0.1.0
-• host:     http://127.0.0.1:3000
-• port:     3000
-```
-
-<br>
-
-### client
-
-```bash
-$ iris client
-
-  ▀             ▀
-▄▄▄     ▄ ▄▄  ▄▄▄     ▄▄▄
-  █     █▀  ▀   █    █   ▀
-  █     █       █     ▀▀▀▄
-▄▄█▄▄   █     ▄▄█▄▄  ▀▄▄▄▀
-
-Client is connected.
-• version:  0.1.0
-• host:     http://127.0.0.1:3000
-• port:     3000
-
-iris@0.1.0 $ SET 0 hello world
-ok
-
-iris@0.1.0 $ GET 0
-ok "hello world"
-
-iris@0.1.0 $ █
-```
-
-<br>
+<img src="https://raw.githubusercontent.com/qxb3/iris/main/repo/tcp_protocol.png" />
 
 ## Todo
 
@@ -78,5 +29,4 @@ iris@0.1.0 $ █
 - [x] Start writing the rust client crate so i can see i can do the below
 - [x] A more sensible non-idiotic server response (still idiotic but i have a vision now? idk)
 - [ ] Make the thing an installable cli
-- [ ] Javascript client
-- [ ] Types maybe?
+- [ ] Javascript client?
