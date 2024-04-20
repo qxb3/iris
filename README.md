@@ -7,6 +7,14 @@
 
 <br>
 
+## Features
+
+- ⚡ **Command-like TCP Protocol**: Utilizes a custom, command-oriented protocol over TCP for structured communication between clients and the in-memory database server.
+- 💨 **Efficient In-Memory Storage**: Crafted in Rust, "iris" is your go-to for a fast and reliable in-memory database.
+- 👤 **User-Friendly Commands**: Easily communicate with the database server using simple commands like SET, GET, DELETE, and more. It's designed to offer an intuitive experience for developers of any skill level.
+
+<br>
+
 ## Workspaces
 
 | Workspace                                                                     | Description                                               |
@@ -20,26 +28,32 @@
 
 <img src="https://raw.githubusercontent.com/qxb3/iris/main/repo/tcp_protocol.png" />
 
+Communication in "iris" follows a structured message format, allowing clients to send commands to the server for processing. The message format consists of the following components:
+
+1. **Command Type**: A three-byte identifier specifying the type of command being sent.
+2. **ID**: Variable-length identifier for the command, used for tracking and processing purposes.
+3. **Data**: Variable-length payload containing additional information required for the command.
+
+```
+SET foo bar
+│   │   └─ Data
+│   └───── ID
+└───────── COMMAND
+```
+
+Upon receiving a command, the server parses the message according to the defined format and processes the request accordingly. The server responds with a message in the following format:
+
+1. **Status**: A two or three-byte identifier indicating the status of the command execution. It can be either "OK" for successful execution or "ERR" for error conditions.
+2. **Response**: A variable-length payload containing additional information or the result of the command execution. This could include data retrieved from the database or an error message.
+
+```
+ok foo
+│  └─ Response
+└──── Status
+```
+
 <br>
 
 ## Contribution
 
 Contributions to iris are welcome! If you have ideas for improvements, new features, or bug fixes, feel free to open an issue or submit a pull request on [iris](https://github.com/qxb3/iris)
-
-<br>
-
-## Todo
-
-- [x] A working server
-- [x] A working client repl
-- [x] Better client and server code (idk, i think its much better than before)
-- [x] `list` command
-- [x] Make a better and sensible command parsing
-- [x] Unrestrict id to just a string
-- [x] Server response in different formats (json)
-- [x] Implement piping operator
-- [x] Start writing the rust client crate so i can see i can do the below
-- [x] A more sensible non-idiotic server response (still idiotic but i have a vision now? idk)
-- [ ] Make the thing an installable cli
-- [ ] Javascript client?
-
