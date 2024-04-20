@@ -15,7 +15,7 @@ iris_client = "0.1.1"
 ## Example
 
 ```rust
-use iris_client::{connect, Expression};
+use iris_client::{connect, Expression, DeleteExpression};
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
@@ -37,13 +37,13 @@ async fn main() -> Result<(), String> {
     let count = client.count(Expression::Number(-1)).await?; // Returns u32
 
     // Deletes an item in the database based on id
-    let deleted_user_id = client.delete(DeletedExpression::ID("user:joe")).await?; // Returns Vec<Item>
+    let deleted_user_id = client.delete(DeleteExpression::ID("user:joe")).await?; // Returns Vec<Item>
 
     // Deletes an item in the database based on count. (This deletes every item from 0 to 2)
-    let deleted_user_count = client.delete(DeletedExpression::Number(2)).await?; // Returns Vec<Item>
+    let deleted_user_count = client.delete(DeleteExpression::Number(2)).await?; // Returns Vec<Item>
 
     // Deletes an item in the database based on range.
-    let deleted_user_expr = client.delete(DeletedExpression::Range(0..2)).await?; // Returns Vec<Item>
+    let deleted_user_expr = client.delete(DeleteExpression::Range(0..2)).await?; // Returns Vec<Item>
 
     // If you want you can also send commands raw
     let raw = client.delete("GET user:joe").await?; // Returns ServerResponse
@@ -61,6 +61,8 @@ use iris_client::connect;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
+    let mut client = connect("127.0.0.1:3000").await?;
+
     // NOTE: I will rewrite this api to make it better. It sucks rn
     let pipe_commands = client.pipe()
         .pipe()
